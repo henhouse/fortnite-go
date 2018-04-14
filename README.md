@@ -16,6 +16,8 @@ To obtain header tokens:
 
 ## Usage
 
+See [Godoc](https://godoc.org/github.com/henhouse/fortnite-go) for in-depth documentation.
+
 ### Player Stats
 To retrieve a player's information and statistics for Battle Royale:
 ```go
