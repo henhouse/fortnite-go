@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -24,6 +25,8 @@ type Session struct {
 	password      string
 	launcherToken string
 	gameToken     string
+
+	mux sync.Mutex
 }
 
 // Create opens a new connection to Epic and authenticates into the game to obtain the necessary access tokens.
@@ -112,14 +115,14 @@ func Create(username, password, launcherToken, gameToken string) *Session {
 	}
 
 	// Spawn goroutine to handle automatic renewal of access token.
-	//go ret.renewProcess()
+	go ret.renewProcess()
 
 	log.Println("Session successfully created.")
 	return ret
 }
 
 // Refresh renews a session by obtaining a new access token, and replacing the hold one. Intended use it for an
-// automatic goroutine to handle scheduling of renewal.
+// automatic goroutine to handle scheduling of renewal. Previous token is automatically invalidated on Epic's end.
 func (s *Session) Refresh() error {
 	data := url.Values{}
 	data.Add("grant_type", "refresh_token")
@@ -144,15 +147,20 @@ func (s *Session) Refresh() error {
 	defer resp.Body.Close()
 
 	// Assign token information to session.
+	s.mux.Lock()
 	s.AccessToken = tr.AccessToken
 	s.RefreshToken = tr.RefreshToken
 	s.ExpiresAt = tr.ExpiresAt
+	s.mux.Unlock()
 
 	return nil
 }
 
 // Kill terminates an existing session by sending a DELETE request to deactivate the session on Epic's servers.
 func (s *Session) Kill() error {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
 	req, err := s.client.NewRequest(http.MethodDelete, killSessionURL+"/"+s.AccessToken, nil)
 	if err != nil {
 		return err
@@ -166,6 +174,11 @@ func (s *Session) Kill() error {
 		return err
 	}
 
+	// Clear session information.
+	s.AccessToken = ""
+	s.ExpiresAt = ""
+	s.RefreshToken = ""
+
 	log.Println("Session token successfully deactivated.")
 	return nil
 }
@@ -174,8 +187,8 @@ func (s *Session) Kill() error {
 // automatic renewal of access token within a necessary time for renewal to ensure the API stays connected and
 // functional.
 func (s *Session) renewProcess() {
-	// Check every 5 seconds if we need to update token.
-	updateChecker := time.NewTimer(time.Second * 5)
+	// Check every 20 seconds if we need to update access token.
+	updateChecker := time.NewTimer(time.Second * 20)
 
 	// Locks until timer above has passed.
 	<-updateChecker.C
@@ -187,8 +200,8 @@ func (s *Session) renewProcess() {
 		return
 	}
 
-	// If the token expiration time does not expire within the next five minutes.
-	if !expiresAt.After(time.Now().Add(-time.Minute * 5)) {
+	// If the token expiration time does not expire within the next minute, wait and try again.
+	if !time.Now().After(expiresAt.Add(-time.Minute - 1)) {
 		defer s.renewProcess()
 		return
 	}
