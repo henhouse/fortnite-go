@@ -18,6 +18,7 @@ const (
 	accountInfoURL   = "https://account-public-service-prod03.ol.epicgames.com/account/api/public/account"
 	killSessionURL   = "https://account-public-service-prod03.ol.epicgames.com/account/api/oauth/sessions/kill"
 
+	serverStatusURL    = "https://lightswitch-public-service-prod06.ol.epicgames.com/lightswitch/api/service/bulk/status?serviceId=Fortnite"
 	accountStatsURL    = "https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/stats/accountId"
 	winsLeaderboardURL = "https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/leaderboards/type/global/stat/br_placetop1_%v_m0%v/window/weekly"
 )
@@ -375,4 +376,46 @@ func (s *Session) getAccountNames(ids []string) (map[string]string, error) {
 	}
 
 	return ret, nil
+}
+
+// statusResponse is the expected response from a server status check.
+type statusResponse []struct {
+	Status         string      `json:"status"`
+	Message        string      `json:"message"`
+	MaintenanceURI interface{} `json:"maintenanceUri"`
+}
+
+// CheckStatus checks the status of the Fortnite game service. Will return false with error containing the status
+// message from Epic.
+func (s *Session) CheckStatus() (bool, error) {
+	// Prepare new request.
+	req, err := s.client.NewRequest(http.MethodGet, serverStatusURL, nil)
+	if err != nil {
+		return false, err
+	}
+
+	// Set authorization header to use access token.
+	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBearer, s.AccessToken))
+
+	// Perform request and decode response into a statusResponse object.
+	var sr statusResponse
+	resp, err := s.client.Do(req, &sr)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	// Ensure at least one value of the array has been provided to prevent panic.
+	if len(sr) == 0 {
+		return false, errors.New("no status response received")
+	}
+
+	// Switch between the status string to determine whether the service is up or down.
+	switch sr[0].Status {
+	case "UP":
+		// Never return the message here since it doesn't seem to be removed when the server resume online status.
+		return true, nil
+	default:
+		return false, errors.New("service is down: " + sr[0].Message)
+	}
 }
