@@ -18,8 +18,8 @@ const (
 	accountInfoURL   = "https://account-public-service-prod03.ol.epicgames.com/account/api/public/account"
 	killSessionURL   = "https://account-public-service-prod03.ol.epicgames.com/account/api/oauth/sessions/kill"
 
-	statsBR               = "https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/stats/accountId"
-	leaderboardGlobalWins = "https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/leaderboards/type/global/stat/br_placetop1_%v_m0%v/window/weekly"
+	accountStatsURL    = "https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/stats/accountId"
+	winsLeaderboardURL = "https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/leaderboards/type/global/stat/br_placetop1_%v_m0%v/window/weekly"
 )
 
 // Platform types
@@ -131,7 +131,7 @@ func (s *Session) QueryPlayer(name, platform string) (*Player, error) {
 		return nil, err
 	}
 
-	u := fmt.Sprintf("%v/%v/%v/%v/%v", statsBR, userInfo.ID, "bulk", "window", "alltime")
+	u := fmt.Sprintf("%v/%v/%v/%v/%v", accountStatsURL, userInfo.ID, "bulk", "window", "alltime")
 	req, err := s.client.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
@@ -250,17 +250,17 @@ func (s *Session) mapStats(records *statsResponse, platform string) Stats {
 	}
 
 	// Calculate additional information such as kill/death ratios, win percentages, etc.
-	calculateRatios(&ret.Solo)
-	calculateRatios(&ret.Duo)
-	calculateRatios(&ret.Squad)
+	calculateStatsRatios(&ret.Solo)
+	calculateStatsRatios(&ret.Duo)
+	calculateStatsRatios(&ret.Squad)
 
 	// Return built Stats object.
 	return ret
 }
 
-// calculateRatios takes a party-specific statDetails object and performs ratio calculations on specific data to provide
-// kill death ratio, win percentage, and kills per minute/match.
-func calculateRatios(s *statDetails) {
+// calculateStatsRatios takes a party-specific statDetails object and performs ratio calculations on specific data to
+// provide kill death ratio, win percentage, and kills per minute/match.
+func calculateStatsRatios(s *statDetails) {
 	s.KillDeathRatio = strconv.FormatFloat(ratio(s.Kills, s.Matches-s.Wins), 'f', 2, 64)
 	s.WinPercentage = strconv.FormatFloat(ratio(s.Wins, s.Matches)*100, 'f', 2, 64)
 	s.KillsPerMinute = strconv.FormatFloat(ratio(s.Kills, s.MinutesPlayed), 'f', 2, 64)
@@ -295,7 +295,7 @@ func (s *Session) GetWinsLeaderboard(platform, groupType string) (*GlobalWinsLea
 	qp.Add("itemsPerPage", "50") // definable up to how many?
 
 	// Prepare new request to obtain leaderboard information.
-	u := fmt.Sprintf(leaderboardGlobalWins, platform, groupType) + "?" + qp.Encode()
+	u := fmt.Sprintf(winsLeaderboardURL, platform, groupType) + "?" + qp.Encode()
 	req, err := s.client.NewRequest(http.MethodPost, u, nil)
 	if err != nil {
 		return nil, err
