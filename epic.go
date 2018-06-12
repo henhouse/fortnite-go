@@ -3,7 +3,6 @@ package fornitego
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -167,7 +166,7 @@ func (s *Session) QueryPlayer(name, platform string) (*Player, error) {
 func (s *Session) findUserInfo(username string) (*lookupResponse, error) {
 	req, err := s.client.NewRequest(http.MethodGet, accountLookupURL+"/lookup?q="+url.QueryEscape(username), nil)
 	if err != nil {
-		log.Fatalln(err)
+		return nil, err
 	}
 
 	// Set authorization to use access token.
@@ -176,7 +175,7 @@ func (s *Session) findUserInfo(username string) (*lookupResponse, error) {
 	ret := &lookupResponse{}
 	resp, err := s.client.Do(req, ret)
 	if err != nil {
-		log.Fatalln(err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
