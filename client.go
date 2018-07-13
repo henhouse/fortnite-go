@@ -16,7 +16,7 @@ type Client struct {
 }
 
 // Version is the package version.
-const Version = "0.1"
+const Version = "0.2"
 
 // userAgent to represent ourselves on request. Is not spoofed due to uncertainty on usage of game API.
 var userAgent = fmt.Sprintf(

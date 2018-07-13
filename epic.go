@@ -1,6 +1,7 @@
 package fornitego
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"net/http"
@@ -294,15 +295,17 @@ func (s *Session) GetWinsLeaderboard(platform, groupType string) (*GlobalWinsLea
 	qp.Add("pageNumber", "0")    // not implemented in-game?
 	qp.Add("itemsPerPage", "50") // definable up to how many?
 
-	// Prepare new request to obtain leaderboard information.
+	// Prepare new request to obtain leaderboard information. Epic literally expects an empty JSON array as input in
+	// order for the request to be valid, hence sending a buffer of an empty array.
 	u := fmt.Sprintf(winsLeaderboardURL, platform, groupType) + "?" + qp.Encode()
-	req, err := s.client.NewRequest(http.MethodPost, u, nil)
+	req, err := s.client.NewRequest(http.MethodPost, u, bytes.NewBufferString("[]"))
 	if err != nil {
 		return nil, err
 	}
 
-	// Use access token.
+	// Use access token and set content type to JSON since we're ending an empty array with the request.
 	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBearer, s.AccessToken))
+	req.Header.Set("Content-Type", "application/json")
 
 	// Perform request and collect response data into leaderboardResponse object.
 	lr := &leaderboardResponse{}
