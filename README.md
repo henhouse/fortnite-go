@@ -25,7 +25,13 @@ To retrieve a player's information and statistics for Battle Royale:
 sess := fornitego.Create("USERNAME", "PASSWORD", "LAUNCHER-TOKEN", "GAME-TOKEN")
 
 // Retrieve player info and stats by Username and Platform.
-player, err := s.QueryPlayer("PlayerName", fornitego.PC) // (PC/Xbox/PS4)
+player, err := s.QueryPlayer("PlayerName", "", fornitego.PC) // (PC/Xbox/PS4)
+if err != nil {
+	fmt.Println(err)
+}
+
+// Retrieve player info and stats by Account ID and Platform.
+player, err := s.QueryPlayer("", "AccountID", fornitego.PC) // (PC/Xbox/PS4)
 if err != nil {
 	fmt.Println(err)
 }
