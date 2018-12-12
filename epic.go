@@ -116,8 +116,8 @@ type leaderboardEntry struct {
 
 // QueryPlayer looks up a player by their username and platform, and returns information about that player, namely, the
 // statistics for the 3 different party modes.
-func (s *Session) QueryPlayer(name string, platform string, account_id string) (*Player, error) {
-	if name == "" && account_id == "" {
+func (s *Session) QueryPlayer(name string, accountId string, platform string) (*Player, error) {
+	if name == "" && accountId == "" {
 		return nil, errors.New("no player name or id provided")
 	}
 	switch platform {
@@ -126,7 +126,7 @@ func (s *Session) QueryPlayer(name string, platform string, account_id string) (
 		return nil, errors.New("invalid platform specified")
 	}
 
-	if name != "" && account_id == "" {
+	if name != "" && accountId == "" {
 		userInfo, err := s.findUserInfo(name)
 		if err != nil {
 			return nil, err
@@ -134,24 +134,20 @@ func (s *Session) QueryPlayer(name string, platform string, account_id string) (
 		account_id = userInfo.ID
 	}
 
-	sr, err := s.QueryPlayerById(account_id)
+	sr, err := s.QueryPlayerById(accountId)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(*sr) == 0 {
-		return nil, errors.New("no statistics found for player " + account_id)
-	}
-
-	acctInfoMap, err := s.getAccountNames([]string{account_id})
+	acctInfoMap, err := s.getAccountNames([]string{accountId})
 	if err != nil {
 		return nil, err
 	}
-	cleanAcctID := strings.Replace(account_id, "-", "", -1)
+	cleanAcctID := strings.Replace(accountId, "-", "", -1)
 
 	return &Player{
 		AccountInfo: AccountInfo{
-			AccountID: account_id,
+			AccountID: accountId,
 			Username:  acctInfoMap[cleanAcctID],
 			Platform:  platform,
 		},
@@ -159,8 +155,8 @@ func (s *Session) QueryPlayer(name string, platform string, account_id string) (
 	}, nil
 }
 
-func (s *Session) QueryPlayerById(account_id string) (*statsResponse, error) {
-	u := fmt.Sprintf("%v/%v/%v/%v/%v", accountStatsURL, account_id, "bulk", "window", "alltime")
+func (s *Session) QueryPlayerById(accountId string) (*statsResponse, error) {
+	u := fmt.Sprintf("%v/%v/%v/%v/%v", accountStatsURL, accountId, "bulk", "window", "alltime")
 	req, err := s.client.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
@@ -177,7 +173,7 @@ func (s *Session) QueryPlayerById(account_id string) (*statsResponse, error) {
 	defer resp.Body.Close()
 
 	if len(*sr) == 0 {
-		return nil, errors.New("no statistics found for player " + account_id)
+		return nil, errors.New("no statistics found for player " + accountId)
 	}
 
 	return sr, nil
