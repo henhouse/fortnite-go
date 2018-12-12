@@ -131,7 +131,7 @@ func (s *Session) QueryPlayer(name string, accountId string, platform string) (*
 		if err != nil {
 			return nil, err
 		}
-		account_id = userInfo.ID
+		accountId = userInfo.ID
 	}
 
 	sr, err := s.QueryPlayerById(accountId)
