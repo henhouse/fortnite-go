@@ -30,9 +30,9 @@ type Session struct {
 }
 
 // Create opens a new connection to Epic and authenticates into the game to obtain the necessary access tokens.
-func Create(username, password, launcherToken, gameToken string) *Session {
+func Create(username, password, launcherToken, gameToken string, use_proxy bool) *Session {
 	// Initialize a new client for this session to make requests with.
-	c := newClient()
+	c := newClient(use_proxy)
 
 	// Prepare form to request access token for launcher.
 	data := url.Values{}
