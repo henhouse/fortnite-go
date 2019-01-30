@@ -46,7 +46,7 @@ func newClient(use_proxy bool) *Client {
 	 	}
 
 	 	torTransport := &http.Transport{Dial: torDialer.Dial}
-		return &Client{client: &http.Client{Transport: torTransport, Timeout: time.Second * 5}}
+		return &Client{client: &http.Client{Transport: torTransport, Timeout: time.Second * 120}}
 	}
 	return &Client{client: &http.Client{}}
 }
