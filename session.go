@@ -30,7 +30,7 @@ type Session struct {
 }
 
 // Create opens a new connection to Epic and authenticates into the game to obtain the necessary access tokens.
-func Create(username, password, launcherToken, gameToken string, use_proxy bool) *Session {
+func Create(username, password, launcherToken, gameToken string, use_proxy bool) (*Session, error) {
 	// Initialize a new client for this session to make requests with.
 	c := newClient(use_proxy)
 
@@ -45,6 +45,7 @@ func Create(username, password, launcherToken, gameToken string, use_proxy bool)
 	req, err := c.NewRequest(http.MethodPost, oauthTokenURL, strings.NewReader(data.Encode()))
 	if err != nil {
 		log.Fatalln(err)
+		return nil, err
 	}
 
 	// Set authorization header to use launcher token.
@@ -55,6 +56,7 @@ func Create(username, password, launcherToken, gameToken string, use_proxy bool)
 	resp, err := c.Do(req, tr)
 	if err != nil {
 		log.Fatalln(err)
+		return nil, err
 	}
 	resp.Body.Close()
 
@@ -63,6 +65,7 @@ func Create(username, password, launcherToken, gameToken string, use_proxy bool)
 	req, err = c.NewRequest(http.MethodGet, oauthExchangeURL, nil)
 	if err != nil {
 		log.Fatalln(err)
+		return nil, err
 	}
 
 	// Set authorization header to use the access token just retrieved.
@@ -73,6 +76,7 @@ func Create(username, password, launcherToken, gameToken string, use_proxy bool)
 	resp, err = c.Do(req, er)
 	if err != nil {
 		log.Fatalln(err)
+		return nil, err
 	}
 	resp.Body.Close()
 
@@ -87,6 +91,7 @@ func Create(username, password, launcherToken, gameToken string, use_proxy bool)
 	req, err = c.NewRequest(http.MethodPost, oauthTokenURL, strings.NewReader(data.Encode()))
 	if err != nil {
 		log.Fatalln(err)
+		return nil, err
 	}
 
 	// Set authorization header to use the game token.
@@ -96,6 +101,7 @@ func Create(username, password, launcherToken, gameToken string, use_proxy bool)
 	resp, err = c.Do(req, tr)
 	if err != nil {
 		log.Fatalln(err)
+		return nil, err
 	}
 	resp.Body.Close()
 
@@ -118,7 +124,7 @@ func Create(username, password, launcherToken, gameToken string, use_proxy bool)
 	go ret.renewProcess()
 
 	log.Println("Session successfully created.")
-	return ret
+	return ret, nil
 }
 
 // Refresh renews a session by obtaining a new access token, and replacing the hold one. Intended use it for an
