@@ -44,7 +44,6 @@ func Create(username, password, launcherToken, gameToken string, use_proxy bool)
 	// Prepare request.
 	req, err := c.NewRequest(http.MethodPost, oauthTokenURL, strings.NewReader(data.Encode()))
 	if err != nil {
-		log.Fatalln(err)
 		return nil, err
 	}
 
@@ -55,7 +54,6 @@ func Create(username, password, launcherToken, gameToken string, use_proxy bool)
 	tr := &tokenResponse{}
 	resp, err := c.Do(req, tr)
 	if err != nil {
-		log.Fatalln(err)
 		return nil, err
 	}
 	resp.Body.Close()
@@ -64,7 +62,6 @@ func Create(username, password, launcherToken, gameToken string, use_proxy bool)
 	// Prepare new request for OAUTH exchange.
 	req, err = c.NewRequest(http.MethodGet, oauthExchangeURL, nil)
 	if err != nil {
-		log.Fatalln(err)
 		return nil, err
 	}
 
@@ -75,7 +72,6 @@ func Create(username, password, launcherToken, gameToken string, use_proxy bool)
 	er := &exchangeResponse{}
 	resp, err = c.Do(req, er)
 	if err != nil {
-		log.Fatalln(err)
 		return nil, err
 	}
 	resp.Body.Close()
@@ -90,7 +86,6 @@ func Create(username, password, launcherToken, gameToken string, use_proxy bool)
 
 	req, err = c.NewRequest(http.MethodPost, oauthTokenURL, strings.NewReader(data.Encode()))
 	if err != nil {
-		log.Fatalln(err)
 		return nil, err
 	}
 
@@ -100,7 +95,6 @@ func Create(username, password, launcherToken, gameToken string, use_proxy bool)
 	// Perform request.
 	resp, err = c.Do(req, tr)
 	if err != nil {
-		log.Fatalln(err)
 		return nil, err
 	}
 	resp.Body.Close()
