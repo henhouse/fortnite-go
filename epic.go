@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"log"
 )
 
 // Epic API endpoints
@@ -162,7 +163,7 @@ log.Println("DEBUG: ", sr)
 			Username:  acctInfoMap[cleanAcctID],
 			Platform:  platform,
 		},
-		Stats: s.mapStats(sr, platform),
+		// Stats: s.mapStats(sr, platform),
 	}, nil
 }
 
@@ -190,7 +191,7 @@ func (s *Session) QueryPlayerById(accountId string) (*statsResponse, error) {
 	return sr, nil
 }
 
-func (s *Session) QueryPlayerByIdV2(accountId string) (*statsResponse, error) {
+func (s *Session) QueryPlayerByIdV2(accountId string) (*statsResponseV2, error) {
 	u := fmt.Sprintf("%v/%v/%v/%v/%v", accountStatsV2URL, accountId, "bulk", "window", "alltime")
 	req, err := s.client.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
@@ -207,7 +208,7 @@ func (s *Session) QueryPlayerByIdV2(accountId string) (*statsResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	if len(*sr) == 0 {
+	if sr == nil {
 		return nil, errors.New("no statistics found for player " + accountId)
 	}
 
