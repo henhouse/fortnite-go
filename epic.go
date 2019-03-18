@@ -57,19 +57,9 @@ type lookupResponse struct {
 }
 
 // statsResponse defines the response collected by a request to the battle royal stats endpoint.
-type statsResponse []statsRecord
+type statsResponse statsRecord
 
-type statsResponseV2 statsRecordV2
-
-// statsRecord defines a single entry in a statsResponse.
 type statsRecord struct {
-	Name      string `json:"name"`
-	Value     int    `json:"value"`
-	Window    string `json:"window"`
-	OwnerType int    `json:"ownerType"`
-}
-
-type statsRecordV2 struct {
 	StartTime			int								`json:"startTime"`
 	EndTime				int								`json:"endTime"`
 	Stats					map[string]int		`json:"stats"`
@@ -128,48 +118,7 @@ type leaderboardEntry struct {
 
 // QueryPlayer looks up a player by their username and platform, and returns information about that player, namely, the
 // statistics for the 3 different party modes.
-// func (s *Session) QueryPlayer(name string, accountId string, platform string) (*Player, error) {
-// 	if name == "" && accountId == "" {
-// 		return nil, errors.New("no player name or id provided")
-// 	}
-// 	switch platform {
-// 	case PC, Xbox, PS4:
-// 	default:
-// 		return nil, errors.New("invalid platform specified")
-// 	}
-//
-// 	if name != "" && accountId == "" {
-// 		userInfo, err := s.findUserInfo(name)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		accountId = userInfo.ID
-// 	}
-//
-// 	sr, err := s.QueryPlayerById(accountId)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	acctInfoMap, err := s.getAccountNames([]string{accountId})
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	cleanAcctID := strings.Replace(accountId, "-", "", -1)
-//
-// 	return &Player{
-// 		AccountInfo: AccountInfo{
-// 			AccountID: accountId,
-// 			Username:  acctInfoMap[cleanAcctID],
-// 			Platform:  platform,
-// 		},
-// 		Stats: s.mapStats(sr, platform),
-// 	}, nil
-// }
-
-// QueryPlayer looks up a player by their username and platform, and returns information about that player, namely, the
-// statistics for the 3 different party modes.
-func (s *Session) QueryPlayerV2(name string, accountId string) (*Player, error) {
+func (s *Session) QueryPlayer(name string, accountId string) (*Player, error) {
 	if name == "" && accountId == "" {
 		return nil, errors.New("no player name or id provided")
 	}
@@ -182,7 +131,7 @@ func (s *Session) QueryPlayerV2(name string, accountId string) (*Player, error) 
 		accountId = userInfo.ID
 	}
 
-	sr, err := s.QueryPlayerByIdV2(accountId)
+	sr, err := s.QueryPlayerById(accountId)
 	if err != nil {
 		log.Println("ERR: ", err)
 		return nil, err
@@ -199,31 +148,7 @@ func (s *Session) QueryPlayerV2(name string, accountId string) (*Player, error) 
 	}, nil
 }
 
-// func (s *Session) QueryPlayerById(accountId string) (*statsResponse, error) {
-// 	u := fmt.Sprintf("%v/", accountStatsURL, accountId)
-// 	req, err := s.client.NewRequest(http.MethodGet, u, nil)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	// Set authorization to use access token.
-// 	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBearer, s.AccessToken))
-//
-// 	sr := &statsResponse{}
-// 	resp, err := s.client.Do(req, sr)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer resp.Body.Close()
-//
-// 	if len(*sr) == 0 {
-// 		return nil, errors.New("no statistics found for player " + accountId)
-// 	}
-//
-// 	return sr, nil
-// }
-
-func (s *Session) QueryPlayerByIdV2(accountId string) (*statsResponseV2, error) {
+func (s *Session) QueryPlayerById(accountId string) (*statsResponse, error) {
 	u := fmt.Sprintf("%v/%s", accountStatsV2URL, accountId)
 	req, err := s.client.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
@@ -233,7 +158,7 @@ func (s *Session) QueryPlayerByIdV2(accountId string) (*statsResponseV2, error) 
 	// Set authorization to use access token.
 	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBearer, s.AccessToken))
 
-	sr := &statsResponseV2{}
+	sr := &statsResponse{}
 	resp, err := s.client.Do(req, sr)
 	if err != nil {
 		return nil, err
@@ -292,7 +217,7 @@ func getStatType(seed string) string {
 
 // mapStats takes a statsResponse object and converts it into a Stats object. It parses the JSON returned from Epic
 // regarding a player's stats, and maps it accordingly based on party type, as well as calculates several useful ratios.
-func (s *Session) mapStats(stats *statsResponseV2) Stats {
+func (s *Session) mapStats(stats *statsResponse) Stats {
 	// Initialize new map with stat details objects based on group type.
 	groups := make(map[string]*statDetails)
 	groups[Solo] = &statDetails{}

@@ -14,6 +14,9 @@ To obtain header tokens:
 *   Launch Fortnite
 *   You will see again a request with _/account/api/oauth/token_. Click on it and then click `Inspectors` tab to get the header (Copy `Authorization` header content and remove "basic ") => **This header is your Game Token**
 
+## V2 Stats Update
+This package has been updated to the latest V2 stats from Epic. There are no more platforms. All stats will be added together between keyboard/mouse, gamepad and touch. Raw Stats are provided in case you want to separate those out.
+
 ## Usage
 
 See [Godoc](https://godoc.org/github.com/henhouse/fortnite-go) for in-depth documentation.
@@ -22,16 +25,16 @@ See [Godoc](https://godoc.org/github.com/henhouse/fortnite-go) for in-depth docu
 To retrieve a player's information and statistics for Battle Royale:
 ```go
 // Create the session.
-sess := fornitego.Create("USERNAME", "PASSWORD", "LAUNCHER-TOKEN", "GAME-TOKEN")
+sess := fortnitego.Create("USERNAME", "PASSWORD", "LAUNCHER-TOKEN", "GAME-TOKEN")
 
-// Retrieve player info and stats by Username and Platform.
-player, err := s.QueryPlayer("PlayerName", "", fornitego.PC) // (PC/Xbox/PS4)
+// Retrieve player info and stats by Username.
+player, err := s.QueryPlayer("PlayerName", "")
 if err != nil {
 	fmt.Println(err)
 }
 
-// Retrieve player info and stats by Account ID and Platform.
-player, err := s.QueryPlayer("", "AccountID", fornitego.PC) // (PC/Xbox/PS4)
+// Retrieve player info and stats by Account ID.
+player, err := s.QueryPlayer("", "AccountID")
 if err != nil {
 	fmt.Println(err)
 }
@@ -41,8 +44,6 @@ If the player exists, a result may look like the example below. (Represented in 
 {
   "AccountInfo": {
     "AccountID": "6cd40c1722f2497fa1d2145b26da88e3",
-    "Username": "WalterJr2",
-    "Platform": "pc"
   },
   "Stats": {
     "Solo": {
@@ -91,7 +92,7 @@ If the player exists, a result may look like the example below. (Represented in 
 ### Leaderboard
 To retrieve the top 50 global wins leaderboard:
 ```go
-lb, err := sess.GetWinsLeaderboard(fornitego.PC, fornitego.Squad) // (Solo, Duo, Squad)
+lb, err := sess.GetWinsLeaderboard(fortnitego.PC, fortnitego.Squad) // (Solo, Duo, Squad)
 if err != nil {
 	fmt.Println(err)
 }
