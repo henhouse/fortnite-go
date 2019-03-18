@@ -1,4 +1,4 @@
-package fornitego
+package fortnitego
 
 import (
 	"errors"
@@ -127,48 +127,48 @@ type leaderboardEntry struct {
 
 // QueryPlayer looks up a player by their username and platform, and returns information about that player, namely, the
 // statistics for the 3 different party modes.
-func (s *Session) QueryPlayer(name string, accountId string, platform string) (*Player, error) {
-	if name == "" && accountId == "" {
-		return nil, errors.New("no player name or id provided")
-	}
-	switch platform {
-	case PC, Xbox, PS4:
-	default:
-		return nil, errors.New("invalid platform specified")
-	}
-
-	if name != "" && accountId == "" {
-		userInfo, err := s.findUserInfo(name)
-		if err != nil {
-			return nil, err
-		}
-		accountId = userInfo.ID
-	}
-
-	sr, err := s.QueryPlayerById(accountId)
-	if err != nil {
-		return nil, err
-	}
-
-	acctInfoMap, err := s.getAccountNames([]string{accountId})
-	if err != nil {
-		return nil, err
-	}
-	cleanAcctID := strings.Replace(accountId, "-", "", -1)
-
-	return &Player{
-		AccountInfo: AccountInfo{
-			AccountID: accountId,
-			Username:  acctInfoMap[cleanAcctID],
-			Platform:  platform,
-		},
-		Stats: s.mapStats(sr, platform),
-	}, nil
-}
+// func (s *Session) QueryPlayer(name string, accountId string, platform string) (*Player, error) {
+// 	if name == "" && accountId == "" {
+// 		return nil, errors.New("no player name or id provided")
+// 	}
+// 	switch platform {
+// 	case PC, Xbox, PS4:
+// 	default:
+// 		return nil, errors.New("invalid platform specified")
+// 	}
+//
+// 	if name != "" && accountId == "" {
+// 		userInfo, err := s.findUserInfo(name)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		accountId = userInfo.ID
+// 	}
+//
+// 	sr, err := s.QueryPlayerById(accountId)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+//
+// 	acctInfoMap, err := s.getAccountNames([]string{accountId})
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	cleanAcctID := strings.Replace(accountId, "-", "", -1)
+//
+// 	return &Player{
+// 		AccountInfo: AccountInfo{
+// 			AccountID: accountId,
+// 			Username:  acctInfoMap[cleanAcctID],
+// 			Platform:  platform,
+// 		},
+// 		Stats: s.mapStats(sr, platform),
+// 	}, nil
+// }
 
 // QueryPlayer looks up a player by their username and platform, and returns information about that player, namely, the
 // statistics for the 3 different party modes.
-func (s *Session) QueryPlayerV2(name string, accountId string) (*statsResponseV2, error) {
+func (s *Session) QueryPlayerV2(name string, accountId string) (*Player, error) {
 	if name == "" && accountId == "" {
 		return nil, errors.New("no player name or id provided")
 	}
@@ -186,34 +186,41 @@ func (s *Session) QueryPlayerV2(name string, accountId string) (*statsResponseV2
 		log.Println("ERR: ", err)
 		return nil, err
 	}
-log.Println("DEBUG: ", sr)
+	log.Println("DEBUG: ", sr)
 
-	return sr, nil
+	cleanAcctID := strings.Replace(accountId, "-", "", -1)
+
+	return &Player{
+		AccountInfo: AccountInfo{
+			AccountID: cleanAcctID,
+		},
+		Stats: s.mapStats(sr),
+	}, nil
 }
 
-func (s *Session) QueryPlayerById(accountId string) (*statsResponse, error) {
-	u := fmt.Sprintf("%v/", accountStatsURL, accountId)
-	req, err := s.client.NewRequest(http.MethodGet, u, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Set authorization to use access token.
-	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBearer, s.AccessToken))
-
-	sr := &statsResponse{}
-	resp, err := s.client.Do(req, sr)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if len(*sr) == 0 {
-		return nil, errors.New("no statistics found for player " + accountId)
-	}
-
-	return sr, nil
-}
+// func (s *Session) QueryPlayerById(accountId string) (*statsResponse, error) {
+// 	u := fmt.Sprintf("%v/", accountStatsURL, accountId)
+// 	req, err := s.client.NewRequest(http.MethodGet, u, nil)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+//
+// 	// Set authorization to use access token.
+// 	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBearer, s.AccessToken))
+//
+// 	sr := &statsResponse{}
+// 	resp, err := s.client.Do(req, sr)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer resp.Body.Close()
+//
+// 	if len(*sr) == 0 {
+// 		return nil, errors.New("no statistics found for player " + accountId)
+// 	}
+//
+// 	return sr, nil
+// }
 
 func (s *Session) QueryPlayerByIdV2(accountId string) (*statsResponseV2, error) {
 	u := fmt.Sprintf("%v/%s", accountStatsV2URL, accountId)
@@ -265,9 +272,9 @@ func (s *Session) findUserInfo(username string) (*lookupResponse, error) {
 
 // Name identifiers for group type. Used in parsing URLs and responses.
 const (
-	Solo  = "_p2"
-	Duo   = "_p10"
-	Squad = "_p9"
+	Solo  = "_defaultsolo"
+	Duo   = "_defaultduo"
+	Squad = "_defaultsquad"
 )
 
 // getStatType is a simple helper function to return the party type if present in a given string.
@@ -284,7 +291,7 @@ func getStatType(seed string) string {
 
 // mapStats takes a statsResponse object and converts it into a Stats object. It parses the JSON returned from Epic
 // regarding a player's stats, and maps it accordingly based on party type, as well as calculates several useful ratios.
-func (s *Session) mapStats(records *statsResponse, platform string) Stats {
+func (s *Session) mapStats(stats *statsResponseV2) Stats {
 	// Initialize new map with stat details objects based on group type.
 	groups := make(map[string]*statDetails)
 	groups[Solo] = &statDetails{}
@@ -292,30 +299,30 @@ func (s *Session) mapStats(records *statsResponse, platform string) Stats {
 	groups[Squad] = &statDetails{}
 
 	// Loop through the stats for a specific user properly sorting and organizing by group type into their own objects.
-	for _, record := range *records {
+	for key, record := range stats.Stats {
 		switch {
-		case strings.Contains(record.Name, "placetop1_"+platform):
-			groups[getStatType(record.Name)].Wins = record.Value
-		case strings.Contains(record.Name, "placetop3_"+platform):
-			groups[getStatType(record.Name)].Top3 = record.Value
-		case strings.Contains(record.Name, "placetop5_"+platform):
-			groups[getStatType(record.Name)].Top5 = record.Value
-		case strings.Contains(record.Name, "placetop6_"+platform):
-			groups[getStatType(record.Name)].Top6 = record.Value
-		case strings.Contains(record.Name, "placetop10_"+platform):
-			groups[getStatType(record.Name)].Top10 = record.Value
-		case strings.Contains(record.Name, "placetop12_"+platform):
-			groups[getStatType(record.Name)].Top12 = record.Value
-		case strings.Contains(record.Name, "placetop25_"+platform):
-			groups[getStatType(record.Name)].Top25 = record.Value
-		case strings.Contains(record.Name, "matchesplayed_"+platform):
-			groups[getStatType(record.Name)].Matches = record.Value
-		case strings.Contains(record.Name, "kills_"+platform):
-			groups[getStatType(record.Name)].Kills = record.Value
-		case strings.Contains(record.Name, "score_"+platform):
-			groups[getStatType(record.Name)].Score = record.Value
-		case strings.Contains(record.Name, "minutesplayed_"+platform):
-			groups[getStatType(record.Name)].MinutesPlayed = record.Value
+		case strings.Contains(key, "placetop1_"):
+			groups[getStatType(key)].Wins += record
+		case strings.Contains(key, "placetop3_"):
+			groups[getStatType(key)].Top3 += record
+		case strings.Contains(key, "placetop5_"):
+			groups[getStatType(key)].Top5 += record
+		case strings.Contains(key, "placetop6_"):
+			groups[getStatType(key)].Top6 += record
+		case strings.Contains(key, "placetop10_"):
+			groups[getStatType(key)].Top10 += record
+		case strings.Contains(key, "placetop12_"):
+			groups[getStatType(key)].Top12 += record
+		case strings.Contains(key, "placetop25_"):
+			groups[getStatType(key)].Top25 += record
+		case strings.Contains(key, "matchesplayed_"):
+			groups[getStatType(key)].Matches += record
+		case strings.Contains(key, "kills_"):
+			groups[getStatType(key)].Kills += record
+		case strings.Contains(key, "score_"):
+			groups[getStatType(key)].Score += record
+		case strings.Contains(key, "minutesplayed_"):
+			groups[getStatType(key)].MinutesPlayed += record
 		}
 	}
 

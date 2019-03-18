@@ -1,4 +1,4 @@
-package fornitego
+package fortnitego
 
 import (
 	"fmt"
