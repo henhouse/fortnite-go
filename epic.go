@@ -317,6 +317,9 @@ func (s *Session) mapStats(stats *statsResponseV2) Stats {
 		case strings.Contains(key, "matchesplayed_"):
 			groups[getStatType(key)].Matches = groups[getStatType(key)].Matches + record
 		case strings.Contains(key, "kills_"):
+			if getStatType(key) == "_defaultsquad" {
+				log.Println("DEBUG: ", record)
+			}
 			groups[getStatType(key)].Kills = groups[getStatType(key)].Kills + record
 		case strings.Contains(key, "score_"):
 			groups[getStatType(key)].Score = groups[getStatType(key)].Score + record
@@ -326,7 +329,6 @@ func (s *Session) mapStats(stats *statsResponseV2) Stats {
 
 		if getStatType(key) == "_defaultsquad" {
 			log.Println("DEBUG: ", groups[getStatType(key)].Kills)
-			log.Println("DEBUG: ", record)
 		}
 	}
 
