@@ -301,31 +301,51 @@ func (s *Session) mapStats(stats *statsResponseV2) Stats {
 	for key, record := range stats.Stats {
 		switch {
 		case strings.Contains(key, "placetop1_"):
-			groups[getStatType(key)].Wins = groups[getStatType(key)].Wins + record
+			if getStatType(key) == Squad ||  getStatType(key) == Duo || getStatType(key) == Solo {
+				groups[getStatType(key)].Wins = groups[getStatType(key)].Wins + record
+			}
 		case strings.Contains(key, "placetop3_"):
-			groups[getStatType(key)].Top3 = groups[getStatType(key)].Top3 + record
+			if getStatType(key) == Squad ||  getStatType(key) == Duo || getStatType(key) == Solo {
+				groups[getStatType(key)].Top3 = groups[getStatType(key)].Top3 + record
+			}
 		case strings.Contains(key, "placetop5_"):
-			groups[getStatType(key)].Top5 = groups[getStatType(key)].Top5 + record
+			if getStatType(key) == Squad ||  getStatType(key) == Duo || getStatType(key) == Solo {
+				groups[getStatType(key)].Top5 = groups[getStatType(key)].Top5 + record
+			}
 		case strings.Contains(key, "placetop6_"):
-			groups[getStatType(key)].Top6 = groups[getStatType(key)].Top6 + record
+			if getStatType(key) == Squad ||  getStatType(key) == Duo || getStatType(key) == Solo {
+				groups[getStatType(key)].Top6 = groups[getStatType(key)].Top6 + record
+			}
 		case strings.Contains(key, "placetop10_"):
-			groups[getStatType(key)].Top10 = groups[getStatType(key)].Top10 + record
+			if getStatType(key) == Squad ||  getStatType(key) == Duo || getStatType(key) == Solo {
+				groups[getStatType(key)].Top10 = groups[getStatType(key)].Top10 + record
+			}
 		case strings.Contains(key, "placetop12_"):
-			groups[getStatType(key)].Top12 = groups[getStatType(key)].Top12 + record
+			if getStatType(key) == Squad ||  getStatType(key) == Duo || getStatType(key) == Solo {
+				groups[getStatType(key)].Top12 = groups[getStatType(key)].Top12 + record
+			}
 		case strings.Contains(key, "placetop25_"):
-			groups[getStatType(key)].Top25 = groups[getStatType(key)].Top25 + record
+			if getStatType(key) == Squad ||  getStatType(key) == Duo || getStatType(key) == Solo {
+				groups[getStatType(key)].Top25 = groups[getStatType(key)].Top25 + record
+			}
 		case strings.Contains(key, "matchesplayed_"):
-			groups[getStatType(key)].Matches = groups[getStatType(key)].Matches + record
+			if getStatType(key) == Squad ||  getStatType(key) == Duo || getStatType(key) == Solo {
+				groups[getStatType(key)].Matches = groups[getStatType(key)].Matches + record
+			}
 		case strings.Contains(key, "kills_"):
-			if getStatType(key) == "_defaultsquad" {
+			if getStatType(key) == Squad ||  getStatType(key) == Duo || getStatType(key) == Solo {
 				log.Println("DEBUG: RECORD ", record)
 				log.Println("DEBUG: KILLS TOTAL ", groups[getStatType(key)].Kills)
+				groups[getStatType(key)].Kills = groups[getStatType(key)].Kills + record
 			}
-			groups[getStatType(key)].Kills = groups[getStatType(key)].Kills + record
 		case strings.Contains(key, "score_"):
-			groups[getStatType(key)].Score = groups[getStatType(key)].Score + record
+			if getStatType(key) == Squad ||  getStatType(key) == Duo || getStatType(key) == Solo {
+				groups[getStatType(key)].Score = groups[getStatType(key)].Score + record
+			}
 		case strings.Contains(key, "minutesplayed_"):
-			groups[getStatType(key)].MinutesPlayed = groups[getStatType(key)].MinutesPlayed + record
+			if getStatType(key) == Squad ||  getStatType(key) == Duo || getStatType(key) == Solo {
+				groups[getStatType(key)].MinutesPlayed = groups[getStatType(key)].MinutesPlayed + record
+			}
 		}
 	}
 
