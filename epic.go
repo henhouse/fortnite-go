@@ -324,8 +324,10 @@ func (s *Session) mapStats(stats *statsResponseV2) Stats {
 			groups[getStatType(key)].MinutesPlayed = groups[getStatType(key)].MinutesPlayed + record
 		}
 
-		log.Println("DEBUG: ", groups[getStatType(key)].Kills)
-		log.Println("DEBUG: ", getStatType(key))
+		if getStatType(key) == "_defaultsquad" {
+			log.Println("DEBUG: ", groups[getStatType(key)].Kills)
+			log.Println("DEBUG: ", record)
+		}
 	}
 
 	// Build new return object using the prepared map data.
