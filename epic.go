@@ -127,7 +127,7 @@ type leaderboardEntry struct {
 
 // QueryPlayer looks up a player by their username and platform, and returns information about that player, namely, the
 // statistics for the 3 different party modes.
-func (s *Session) QueryPlayer(name string, accountId string, platform string) (*Player, error) {
+func (s *Session) QueryPlayer(name string, accountId string, platform string) (*statsResponseV2, error) {
 	if name == "" && accountId == "" {
 		return nil, errors.New("no player name or id provided")
 	}
@@ -151,20 +151,13 @@ func (s *Session) QueryPlayer(name string, accountId string, platform string) (*
 		return nil, err
 	}
 log.Println("DEBUG: ", sr)
-	acctInfoMap, err := s.getAccountNames([]string{accountId})
-	if err != nil {
-		return nil, err
-	}
-	cleanAcctID := strings.Replace(accountId, "-", "", -1)
+	// acctInfoMap, err := s.getAccountNames([]string{accountId})
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// cleanAcctID := strings.Replace(accountId, "-", "", -1)
 
-	return &Player{
-		AccountInfo: AccountInfo{
-			AccountID: accountId,
-			Username:  acctInfoMap[cleanAcctID],
-			Platform:  platform,
-		},
-		// Stats: s.mapStats(sr, platform),
-	}, nil
+	return sr, nil
 }
 
 func (s *Session) QueryPlayerById(accountId string) (*statsResponse, error) {
@@ -192,7 +185,7 @@ func (s *Session) QueryPlayerById(accountId string) (*statsResponse, error) {
 }
 
 func (s *Session) QueryPlayerByIdV2(accountId string) (*statsResponseV2, error) {
-	u := fmt.Sprintf("%v/%v/%v/%v/%v", accountStatsV2URL, accountId, "bulk", "window", "alltime")
+	u := fmt.Sprintf("%v/%v/%v/%v/%v", accountStatsV2URL, accountId)
 	req, err := s.client.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
