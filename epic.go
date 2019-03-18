@@ -127,7 +127,48 @@ type leaderboardEntry struct {
 
 // QueryPlayer looks up a player by their username and platform, and returns information about that player, namely, the
 // statistics for the 3 different party modes.
-func (s *Session) QueryPlayer(name string, accountId string, platform string) (*statsResponseV2, error) {
+func (s *Session) QueryPlayer(name string, accountId string, platform string) (*Player, error) {
+	if name == "" && accountId == "" {
+		return nil, errors.New("no player name or id provided")
+	}
+	switch platform {
+	case PC, Xbox, PS4:
+	default:
+		return nil, errors.New("invalid platform specified")
+	}
+
+	if name != "" && accountId == "" {
+		userInfo, err := s.findUserInfo(name)
+		if err != nil {
+			return nil, err
+		}
+		accountId = userInfo.ID
+	}
+
+	sr, err := s.QueryPlayerById(accountId)
+	if err != nil {
+		return nil, err
+	}
+
+	acctInfoMap, err := s.getAccountNames([]string{accountId})
+	if err != nil {
+		return nil, err
+	}
+	cleanAcctID := strings.Replace(accountId, "-", "", -1)
+
+	return &Player{
+		AccountInfo: AccountInfo{
+			AccountID: accountId,
+			Username:  acctInfoMap[cleanAcctID],
+			Platform:  platform,
+		},
+		Stats: s.mapStats(sr, platform),
+	}, nil
+}
+
+// QueryPlayer looks up a player by their username and platform, and returns information about that player, namely, the
+// statistics for the 3 different party modes.
+func (s *Session) QueryPlayerV2(name string, accountId string, platform string) (*statsResponseV2, error) {
 	if name == "" && accountId == "" {
 		return nil, errors.New("no player name or id provided")
 	}
