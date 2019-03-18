@@ -216,7 +216,7 @@ func (s *Session) QueryPlayerById(accountId string) (*statsResponse, error) {
 }
 
 func (s *Session) QueryPlayerByIdV2(accountId string) (*statsResponseV2, error) {
-	u := fmt.Sprintf("%v/", accountStatsV2URL, accountId)
+	u := fmt.Sprintf("%v/%s", accountStatsV2URL, accountId)
 	req, err := s.client.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
