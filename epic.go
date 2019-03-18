@@ -19,6 +19,7 @@ const (
 
 	serverStatusURL    = "https://lightswitch-public-service-prod06.ol.epicgames.com/lightswitch/api/service/bulk/status?serviceId=Fortnite"
 	accountStatsURL    = "https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/stats/accountId"
+	accountStatsV2URL  = "https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/statsv2/account"
 	winsLeaderboardURL = "https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/leaderboards/type/global/stat/br_placetop1_%v_m0%v/window/weekly"
 )
 
@@ -57,12 +58,21 @@ type lookupResponse struct {
 // statsResponse defines the response collected by a request to the battle royal stats endpoint.
 type statsResponse []statsRecord
 
+type statsResponseV2 statsRecordV2
+
 // statsRecord defines a single entry in a statsResponse.
 type statsRecord struct {
 	Name      string `json:"name"`
 	Value     int    `json:"value"`
 	Window    string `json:"window"`
 	OwnerType int    `json:"ownerType"`
+}
+
+type statsRecordV2 struct {
+	StartTime			int								`json:"startTime"`
+	EndTime				int								`json:"endTime"`
+	Stats					map[string]int		`json:"stats"`
+	AccountID			string						`json:"accountId"`
 }
 
 // Player is the hierarchical struct used to contain information regarding a player's account info and stats.
@@ -134,11 +144,12 @@ func (s *Session) QueryPlayer(name string, accountId string, platform string) (*
 		accountId = userInfo.ID
 	}
 
-	sr, err := s.QueryPlayerById(accountId)
+	sr, err := s.QueryPlayerByIdV2(accountId)
 	if err != nil {
+		log.Println("ERR: ", err)
 		return nil, err
 	}
-
+log.Println("DEBUG: ", sr)
 	acctInfoMap, err := s.getAccountNames([]string{accountId})
 	if err != nil {
 		return nil, err
@@ -156,7 +167,7 @@ func (s *Session) QueryPlayer(name string, accountId string, platform string) (*
 }
 
 func (s *Session) QueryPlayerById(accountId string) (*statsResponse, error) {
-	u := fmt.Sprintf("%v/%v/%v/%v/%v", accountStatsURL, accountId, "bulk", "window", "alltime")
+	u := fmt.Sprintf("%v/", accountStatsURL, accountId)
 	req, err := s.client.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
@@ -166,6 +177,30 @@ func (s *Session) QueryPlayerById(accountId string) (*statsResponse, error) {
 	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBearer, s.AccessToken))
 
 	sr := &statsResponse{}
+	resp, err := s.client.Do(req, sr)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if len(*sr) == 0 {
+		return nil, errors.New("no statistics found for player " + accountId)
+	}
+
+	return sr, nil
+}
+
+func (s *Session) QueryPlayerByIdV2(accountId string) (*statsResponse, error) {
+	u := fmt.Sprintf("%v/%v/%v/%v/%v", accountStatsV2URL, accountId, "bulk", "window", "alltime")
+	req, err := s.client.NewRequest(http.MethodGet, u, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set authorization to use access token.
+	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBearer, s.AccessToken))
+
+	sr := &statsResponseV2{}
 	resp, err := s.client.Do(req, sr)
 	if err != nil {
 		return nil, err
