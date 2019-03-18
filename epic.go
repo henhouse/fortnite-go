@@ -323,6 +323,9 @@ func (s *Session) mapStats(stats *statsResponseV2) Stats {
 		case strings.Contains(key, "minutesplayed_"):
 			groups[getStatType(key)].MinutesPlayed = groups[getStatType(key)].MinutesPlayed + record
 		}
+
+		log.Println("DEBUG: ", groups[getStatType(key)].Kills)
+		log.Println("DEBUG: ", getStatType(key))
 	}
 
 	// Build new return object using the prepared map data.
