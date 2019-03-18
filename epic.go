@@ -335,8 +335,8 @@ func (s *Session) mapStats(stats *statsResponseV2) Stats {
 		case strings.Contains(key, "kills_"):
 			if getStatType(key) == Squad ||  getStatType(key) == Duo || getStatType(key) == Solo {
 				log.Println("DEBUG: RECORD ", record)
-				log.Println("DEBUG: KILLS TOTAL ", groups[getStatType(key)].Kills)
 				groups[getStatType(key)].Kills = groups[getStatType(key)].Kills + record
+				log.Println("DEBUG: KILLS TOTAL ", groups[getStatType(key)].Kills)
 			}
 		case strings.Contains(key, "score_"):
 			if getStatType(key) == Squad ||  getStatType(key) == Duo || getStatType(key) == Solo {
