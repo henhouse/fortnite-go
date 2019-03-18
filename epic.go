@@ -168,14 +168,9 @@ func (s *Session) QueryPlayer(name string, accountId string, platform string) (*
 
 // QueryPlayer looks up a player by their username and platform, and returns information about that player, namely, the
 // statistics for the 3 different party modes.
-func (s *Session) QueryPlayerV2(name string, accountId string, platform string) (*statsResponseV2, error) {
+func (s *Session) QueryPlayerV2(name string, accountId string) (*statsResponseV2, error) {
 	if name == "" && accountId == "" {
 		return nil, errors.New("no player name or id provided")
-	}
-	switch platform {
-	case PC, Xbox, PS4:
-	default:
-		return nil, errors.New("invalid platform specified")
 	}
 
 	if name != "" && accountId == "" {
@@ -192,11 +187,6 @@ func (s *Session) QueryPlayerV2(name string, accountId string, platform string) 
 		return nil, err
 	}
 log.Println("DEBUG: ", sr)
-	// acctInfoMap, err := s.getAccountNames([]string{accountId})
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// cleanAcctID := strings.Replace(accountId, "-", "", -1)
 
 	return sr, nil
 }
@@ -226,7 +216,7 @@ func (s *Session) QueryPlayerById(accountId string) (*statsResponse, error) {
 }
 
 func (s *Session) QueryPlayerByIdV2(accountId string) (*statsResponseV2, error) {
-	u := fmt.Sprintf("%s/%s", accountStatsV2URL, accountId)
+	u := fmt.Sprintf("%v/", accountStatsV2URL, accountId)
 	req, err := s.client.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
