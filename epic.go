@@ -137,11 +137,16 @@ func (s *Session) QueryPlayer(name string, accountId string) (*Player, error) {
 		return nil, err
 	}
 
+	acctInfoMap, err := s.getAccountNames([]string{accountId})
+	if err != nil {
+		return nil, err
+	}
 	cleanAcctID := strings.Replace(accountId, "-", "", -1)
 
 	return &Player{
 		AccountInfo: AccountInfo{
-			AccountID: cleanAcctID,
+			AccountID: accountId,
+			Username:  acctInfoMap[cleanAcctID],
 		},
 		Stats: s.mapStats(sr),
 		RawStats: sr.Stats,
