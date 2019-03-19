@@ -17,6 +17,17 @@ To obtain header tokens:
 ## V2 Stats Update
 This package has been updated to the latest V2 stats from Epic. There are no more platforms. All stats will be added together between keyboard/mouse, gamepad and touch. Raw Stats are provided in case you want to separate those out.
 
+## V1 Stats Compatibility
+To retrieve stats via V1 stats, please use the QueryPlayerV1 method:
+
+```go
+// Retrieve player info and stats by Account ID.
+player, err := s.QueryPlayerV1("", "AccountID")
+if err != nil {
+	fmt.Println(err)
+}
+```
+
 ## Usage
 
 See [Godoc](https://godoc.org/github.com/henhouse/fortnite-go) for in-depth documentation.

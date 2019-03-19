@@ -58,12 +58,21 @@ type lookupResponse struct {
 
 // statsResponse defines the response collected by a request to the battle royal stats endpoint.
 type statsResponse statsRecord
+type statsResponseV1 []statsRecordV1
 
 type statsRecord struct {
 	StartTime			int								`json:"startTime"`
 	EndTime				int								`json:"endTime"`
 	Stats					map[string]int		`json:"stats"`
 	AccountID			string						`json:"accountId"`
+}
+
+// statsRecord defines a single entry in a statsResponse.
+type statsRecordV1 struct {
+	Name      string `json:"name"`
+	Value     int    `json:"value"`
+	Window    string `json:"window"`
+	OwnerType int    `json:"ownerType"`
 }
 
 // Player is the hierarchical struct used to contain information regarding a player's account info and stats.
@@ -284,6 +293,143 @@ func (s *Session) mapStats(stats *statsResponse) Stats {
 		Solo:  *groups[Solo],
 		Duo:   *groups[Duo],
 		Squad: *groups[Squad],
+	}
+
+	// Calculate additional information such as kill/death ratios, win percentages, etc.
+	calculateStatsRatios(&ret.Solo)
+	calculateStatsRatios(&ret.Duo)
+	calculateStatsRatios(&ret.Squad)
+
+	// Return built Stats object.
+	return ret
+}
+
+// QueryPlayer V1 looks up a player by their username and platform, and returns information about that player, namely, the
+// statistics for the 3 different party modes.
+func (s *Session) QueryPlayerV1(name string, accountId string, platform string) (*Player, error) {
+	if name == "" && accountId == "" {
+		return nil, errors.New("no player name or id provided")
+	}
+	switch platform {
+	case PC, Xbox, PS4:
+	default:
+		return nil, errors.New("invalid platform specified")
+	}
+
+	if name != "" && accountId == "" {
+		userInfo, err := s.findUserInfo(name)
+		if err != nil {
+			return nil, err
+		}
+		accountId = userInfo.ID
+	}
+
+	sr, err := s.QueryPlayerByIdV1(accountId)
+	if err != nil {
+		return nil, err
+	}
+
+	acctInfoMap, err := s.getAccountNames([]string{accountId})
+	if err != nil {
+		return nil, err
+	}
+	cleanAcctID := strings.Replace(accountId, "-", "", -1)
+
+	return &Player{
+		AccountInfo: AccountInfo{
+			AccountID: accountId,
+			Username:  acctInfoMap[cleanAcctID],
+			Platform:  platform,
+		},
+		Stats: s.mapStatsV1(sr, platform),
+	}, nil
+}
+
+func (s *Session) QueryPlayerByIdV1(accountId string) (*statsResponseV1, error) {
+	u := fmt.Sprintf("%v/%v/%v/%v/%v", accountStatsURL, accountId, "bulk", "window", "alltime")
+	req, err := s.client.NewRequest(http.MethodGet, u, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set authorization to use access token.
+	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBearer, s.AccessToken))
+
+	sr := &statsResponseV1{}
+	resp, err := s.client.Do(req, sr)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if len(*sr) == 0 {
+		return nil, errors.New("no statistics found for player " + accountId)
+	}
+
+	return sr, nil
+}
+
+// Name identifiers for group type. Used in parsing URLs and responses.
+const (
+	SoloV1  = "_p2"
+	DuoV1   = "_p10"
+	SquadV1 = "_p9"
+)
+
+// getStatType is a simple helper function to return the party type if present in a given string.
+func getStatTypeV1(seed string) string {
+	switch {
+	case strings.Contains(seed, SoloV1):
+		return SoloV1
+	case strings.Contains(seed, DuoV1):
+		return DuoV1
+	default: // _p9
+		return SquadV1
+	}
+}
+
+// mapStats takes a statsResponse object and converts it into a Stats object. It parses the JSON returned from Epic
+// regarding a player's stats, and maps it accordingly based on party type, as well as calculates several useful ratios.
+func (s *Session) mapStatsV1(records *statsResponseV1, platform string) Stats {
+	// Initialize new map with stat details objects based on group type.
+	groups := make(map[string]*statDetails)
+	groups[SoloV1] = &statDetails{}
+	groups[DuoV1] = &statDetails{}
+	groups[SquadV1] = &statDetails{}
+
+	// Loop through the stats for a specific user properly sorting and organizing by group type into their own objects.
+	for _, record := range *records {
+		switch {
+		case strings.Contains(record.Name, "placetop1_"+platform):
+			groups[getStatTypeV1(record.Name)].Wins = record.Value
+		case strings.Contains(record.Name, "placetop3_"+platform):
+			groups[getStatTypeV1(record.Name)].Top3 = record.Value
+		case strings.Contains(record.Name, "placetop5_"+platform):
+			groups[getStatTypeV1(record.Name)].Top5 = record.Value
+		case strings.Contains(record.Name, "placetop6_"+platform):
+			groups[getStatTypeV1(record.Name)].Top6 = record.Value
+		case strings.Contains(record.Name, "placetop10_"+platform):
+			groups[getStatTypeV1(record.Name)].Top10 = record.Value
+		case strings.Contains(record.Name, "placetop12_"+platform):
+			groups[getStatTypeV1(record.Name)].Top12 = record.Value
+		case strings.Contains(record.Name, "placetop25_"+platform):
+			groups[getStatTypeV1(record.Name)].Top25 = record.Value
+		case strings.Contains(record.Name, "matchesplayed_"+platform):
+			groups[getStatTypeV1(record.Name)].Matches = record.Value
+		case strings.Contains(record.Name, "kills_"+platform):
+			groups[getStatTypeV1(record.Name)].Kills = record.Value
+		case strings.Contains(record.Name, "score_"+platform):
+			groups[getStatTypeV1(record.Name)].Score = record.Value
+		case strings.Contains(record.Name, "minutesplayed_"+platform):
+			groups[getStatTypeV1(record.Name)].MinutesPlayed = record.Value
+		}
+	}
+
+	// Build new return object using the prepared map data.
+	ret := Stats{
+		Solo:  *groups[SoloV1],
+		Duo:   *groups[DuoV1],
+		Squad: *groups[SquadV1],
 	}
 
 	// Calculate additional information such as kill/death ratios, win percentages, etc.
