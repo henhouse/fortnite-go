@@ -30,7 +30,7 @@ type Session struct {
 }
 
 // Create opens a new connection to Epic and authenticates into the game to obtain the necessary access tokens.
-func Create(username, password, launcherToken, gameToken string, use_proxy bool) (*Session, error) {
+func Create(username string, password string, launcherToken string, gameToken string, use_proxy bool) (*Session, error) {
 	// Initialize a new client for this session to make requests with.
 	c := newClient(use_proxy)
 
@@ -110,6 +110,96 @@ func Create(username, password, launcherToken, gameToken string, use_proxy bool)
 
 		username:      username,
 		password:      password,
+		launcherToken: launcherToken,
+		gameToken:     gameToken,
+	}
+
+	// Spawn goroutine to handle automatic renewal of access token.
+	go ret.renewProcess()
+
+	log.Println("Session successfully created.")
+	return ret, nil
+}
+
+// Create opens a new connection to Epic and authenticates into the game to obtain the necessary access tokens.
+func Create2fa(challenge string, otp string, launcherToken string, gameToken string) (*Session, error) {
+	// Initialize a new client for this session to make requests with.
+	c := newClient(false)
+
+	// Prepare form to request access token for launcher.
+	data := url.Values{}
+	data.Add("grant_type", "otp")
+	data.Add("otp", otp)
+	data.Add("challenge", challenge)
+	data.Add("includePerms", "false")
+
+	// Prepare request.
+	req, err := c.NewRequest(http.MethodPost, oauthTokenURL, strings.NewReader(data.Encode()))
+	if err != nil {
+		return nil, err
+	}
+
+	// Set authorization header to use launcher token.
+	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBasic, launcherToken))
+
+	// Process request and decode response into tokenResponse.
+	tr := &tokenResponse{}
+	resp, err := c.Do(req, tr)
+	if err != nil {
+		return nil, err
+	}
+	resp.Body.Close()
+
+	///////////////////
+	// Prepare new request for OAUTH exchange.
+	req, err = c.NewRequest(http.MethodGet, oauthExchangeURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set authorization header to use the access token just retrieved.
+	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBearer, tr.AccessToken))
+
+	// Process request and decode response into exchangeResponse.
+	er := &exchangeResponse{}
+	resp, err = c.Do(req, er)
+	if err != nil {
+		return nil, err
+	}
+	resp.Body.Close()
+
+	////////////////////
+	// Prepare new form for 2nd OAUTH token request for game client.
+	data = url.Values{}
+	data.Add("grant_type", "exchange_code")
+	data.Add("exchange_code", er.Code)
+	data.Add("includePerms", "true")
+	data.Add("token_type", "eg1") // should this be eg1???
+
+	req, err = c.NewRequest(http.MethodPost, oauthTokenURL, strings.NewReader(data.Encode()))
+	if err != nil {
+		return nil, err
+	}
+
+	// Set authorization header to use the game token.
+	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBasic, gameToken))
+
+	// Perform request.
+	resp, err = c.Do(req, tr)
+	if err != nil {
+		return nil, err
+	}
+	resp.Body.Close()
+
+	// Create new session object from data retrieved.
+	ret := &Session{
+		client:       c,
+		AccessToken:  tr.AccessToken,
+		ExpiresAt:    tr.ExpiresAt,
+		RefreshToken: tr.RefreshToken,
+		AccountID:    tr.AccountID,
+		ClientID:     tr.ClientID,
+
 		launcherToken: launcherToken,
 		gameToken:     gameToken,
 	}

@@ -114,6 +114,6 @@ func checkStatus(resp *http.Response) error {
 		}
 		defer resp.Body.Close()
 
-		return errors.New(fmt.Sprintf("unsuccessful response returned: %v %v", resp.StatusCode, string(b)))
+		return errors.New(string(b))
 	}
 }
