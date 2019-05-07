@@ -77,43 +77,45 @@ var (
 )
 
 // Do processes a prepared HTTP request with the client provided. An interface is passed in to decode the response into.
-func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
+func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, string, error) {
 	// Process request using session's client. Collect response.
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// Check response status codes to determine success/failure.
-	err = checkStatus(resp)
+	device_id, err := checkStatus(resp)
 	if err != nil {
-		return nil, err
+		return nil, device_id, err
 	}
 
 	// If an interface was provided, decode response body into it.
 	if v != nil {
 		err = json.NewDecoder(resp.Body).Decode(v)
 		if err != nil && err != io.EOF {
-			return resp, err
+			return resp, "", err
 		}
 	}
 
-	return resp, nil
+	return resp, "", nil
 }
 
 // checkStatus checks the HTTP response status code for unsuccessful requests.
 // @todo decode error into Epic Error-JSON object to determine better errors.go?
-func checkStatus(resp *http.Response) error {
+func checkStatus(resp *http.Response) (string, error) {
 	switch resp.StatusCode {
 	case http.StatusOK, http.StatusNoContent:
-		return nil
+		return "", nil
 	default:
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return errors.New("unsuccessful response returned and cannot read body: " + err.Error())
+			return "", errors.New("unsuccessful response returned and cannot read body: " + err.Error())
 		}
 		defer resp.Body.Close()
 
-		return errors.New(string(b))
+		device_id := resp.Header.Get("X-Epic-Device-ID")
+
+		return device_id, errors.New(string(b))
 	}
 }

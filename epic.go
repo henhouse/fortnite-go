@@ -173,7 +173,7 @@ func (s *Session) QueryPlayerById(accountId string) (*statsResponse, error) {
 	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBearer, s.AccessToken))
 
 	sr := &statsResponse{}
-	resp, err := s.client.Do(req, sr)
+	resp, _, err := s.client.Do(req, sr)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +197,7 @@ func (s *Session) findUserInfo(username string) (*lookupResponse, error) {
 	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBearer, s.AccessToken))
 
 	ret := &lookupResponse{}
-	resp, err := s.client.Do(req, ret)
+	resp, _, err := s.client.Do(req, ret)
 	if err != nil {
 		return nil, err
 	}
@@ -356,7 +356,7 @@ func (s *Session) QueryPlayerByIdV1(accountId string) (*statsResponseV1, error) 
 	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBearer, s.AccessToken))
 
 	sr := &statsResponseV1{}
-	resp, err := s.client.Do(req, sr)
+	resp, _, err := s.client.Do(req, sr)
 	if err != nil {
 		return nil, err
 	}
@@ -489,7 +489,7 @@ func (s *Session) GetWinsLeaderboard(platform, groupType string) (*GlobalWinsLea
 
 	// Perform request and collect response data into leaderboardResponse object.
 	lr := &leaderboardResponse{}
-	resp, err := s.client.Do(req, lr)
+	resp, _, err := s.client.Do(req, lr)
 	if err != nil {
 		return nil, err
 	}
@@ -545,7 +545,7 @@ func (s *Session) getAccountNames(ids []string) (map[string]string, error) {
 
 	// Perform query and collect response into an array of lookupResponse objects.
 	var data []lookupResponse
-	resp, err := s.client.Do(req, &data)
+	resp, _, err := s.client.Do(req, &data)
 	if err != nil {
 		return nil, err
 	}
@@ -581,7 +581,7 @@ func (s *Session) CheckStatus() (bool, error) {
 
 	// Perform request and decode response into a statusResponse object.
 	var sr statusResponse
-	resp, err := s.client.Do(req, &sr)
+	resp, _, err := s.client.Do(req, &sr)
 	if err != nil {
 		return false, err
 	}

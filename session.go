@@ -30,7 +30,7 @@ type Session struct {
 }
 
 // Create opens a new connection to Epic and authenticates into the game to obtain the necessary access tokens.
-func Create(username string, password string, launcherToken string, gameToken string, use_proxy bool) (*Session, error) {
+func Create(username string, password string, launcherToken string, gameToken string, use_proxy bool) (*Session, string, error) {
 	// Initialize a new client for this session to make requests with.
 	c := newClient(use_proxy)
 
@@ -44,7 +44,7 @@ func Create(username string, password string, launcherToken string, gameToken st
 	// Prepare request.
 	req, err := c.NewRequest(http.MethodPost, oauthTokenURL, strings.NewReader(data.Encode()))
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// Set authorization header to use launcher token.
@@ -52,9 +52,9 @@ func Create(username string, password string, launcherToken string, gameToken st
 
 	// Process request and decode response into tokenResponse.
 	tr := &tokenResponse{}
-	resp, err := c.Do(req, tr)
+	resp, device_id, err := c.Do(req, tr)
 	if err != nil {
-		return nil, err
+		return nil, device_id, err
 	}
 	resp.Body.Close()
 
@@ -62,7 +62,7 @@ func Create(username string, password string, launcherToken string, gameToken st
 	// Prepare new request for OAUTH exchange.
 	req, err = c.NewRequest(http.MethodGet, oauthExchangeURL, nil)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// Set authorization header to use the access token just retrieved.
@@ -70,9 +70,9 @@ func Create(username string, password string, launcherToken string, gameToken st
 
 	// Process request and decode response into exchangeResponse.
 	er := &exchangeResponse{}
-	resp, err = c.Do(req, er)
+	resp, _, err = c.Do(req, er)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	resp.Body.Close()
 
@@ -86,16 +86,16 @@ func Create(username string, password string, launcherToken string, gameToken st
 
 	req, err = c.NewRequest(http.MethodPost, oauthTokenURL, strings.NewReader(data.Encode()))
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// Set authorization header to use the game token.
 	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBasic, gameToken))
 
 	// Perform request.
-	resp, err = c.Do(req, tr)
+	resp, _, err = c.Do(req, tr)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	resp.Body.Close()
 
@@ -118,11 +118,11 @@ func Create(username string, password string, launcherToken string, gameToken st
 	go ret.renewProcess()
 
 	log.Println("Session successfully created.")
-	return ret, nil
+	return ret, "", nil
 }
 
 // Create opens a new connection to Epic and authenticates into the game to obtain the necessary access tokens.
-func Create2fa(challenge string, otp string, launcherToken string, gameToken string) (*Session, error) {
+func Create2fa(challenge string, otp string, device_id string, launcherToken string, gameToken string) (*Session, error) {
 	// Initialize a new client for this session to make requests with.
 	c := newClient(false)
 
@@ -141,10 +141,11 @@ func Create2fa(challenge string, otp string, launcherToken string, gameToken str
 
 	// Set authorization header to use launcher token.
 	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBasic, launcherToken))
+	req.Header.Set("X-Epic-Device-ID", device_id)
 
 	// Process request and decode response into tokenResponse.
 	tr := &tokenResponse{}
-	resp, err := c.Do(req, tr)
+	resp, _, err := c.Do(req, tr)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +163,7 @@ func Create2fa(challenge string, otp string, launcherToken string, gameToken str
 
 	// Process request and decode response into exchangeResponse.
 	er := &exchangeResponse{}
-	resp, err = c.Do(req, er)
+	resp, _, err = c.Do(req, er)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +186,7 @@ func Create2fa(challenge string, otp string, launcherToken string, gameToken str
 	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBasic, gameToken))
 
 	// Perform request.
-	resp, err = c.Do(req, tr)
+	resp, _, err = c.Do(req, tr)
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +231,7 @@ func (s *Session) Refresh() error {
 
 	// Perform request and collect response into response object.
 	tr := &tokenResponse{}
-	resp, err := s.client.Do(req, tr)
+	resp, _, err := s.client.Do(req, tr)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -259,7 +260,7 @@ func (s *Session) Kill() error {
 	// Set authentication header to use access token.
 	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBearer, s.AccessToken))
 
-	_, err = s.client.Do(req, nil)
+	_, _, err = s.client.Do(req, nil)
 	if err != nil {
 		return err
 	}
