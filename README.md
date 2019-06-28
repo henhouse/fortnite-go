@@ -14,10 +14,10 @@ To obtain header tokens:
 *   Launch Fortnite
 *   You will see again a request with _/account/api/oauth/token_. Click on it and then click `Inspectors` tab to get the header (Copy `Authorization` header content and remove "basic ") => **This header is your Game Token**
 
-## V2 Stats Update
-This package has been updated to the latest V2 stats from Epic. There are no more platforms. All stats will be added together between keyboard/mouse, gamepad and touch. Raw Stats are provided in case you want to separate those out.
+## V2 Stats
+This package has been updated to the latest V2 stats from Epic. There are no more platforms. All stats are broken up between input type (keyboardmouse, gamepad, and touch).
 
-## V1 Stats Compatibility
+## V1 Stats Compatibility - *Deprecated*
 To retrieve stats via V1 stats, please use the QueryPlayerV1 method:
 
 ```go
@@ -58,43 +58,127 @@ If the player exists, a result may look like the example below. (Represented in 
   },
   "Stats": {
     "Solo": {
-      "Wins": 23,
-      "Top10": 86,
-      "Top25": 154,
-      "KillDeathRatio": "3.13",
-      "WinPercentage": "6.74",
-      "Matches": 341,
-      "Kills": 995,
-      "MinutesPlayed": 2174,
-      "KillsPerMatch": "2.92",
-      "KillsPerMinute": "0.46",
-      "Score": 56247
+			"Touch": {
+	      "Wins": 23,
+	      "Top10": 86,
+	      "Top25": 154,
+	      "KillDeathRatio": "3.13",
+	      "WinPercentage": "6.74",
+	      "Matches": 341,
+	      "Kills": 995,
+	      "MinutesPlayed": 2174,
+	      "KillsPerMatch": "2.92",
+	      "KillsPerMinute": "0.46",
+	      "Score": 56247
+			},
+			"Gamepad": {
+	      "Wins": 23,
+	      "Top10": 86,
+	      "Top25": 154,
+	      "KillDeathRatio": "3.13",
+	      "WinPercentage": "6.74",
+	      "Matches": 341,
+	      "Kills": 995,
+	      "MinutesPlayed": 2174,
+	      "KillsPerMatch": "2.92",
+	      "KillsPerMinute": "0.46",
+	      "Score": 56247
+			},
+			"KeyboardMouse": {
+	      "Wins": 23,
+	      "Top10": 86,
+	      "Top25": 154,
+	      "KillDeathRatio": "3.13",
+	      "WinPercentage": "6.74",
+	      "Matches": 341,
+	      "Kills": 995,
+	      "MinutesPlayed": 2174,
+	      "KillsPerMatch": "2.92",
+	      "KillsPerMinute": "0.46",
+	      "Score": 56247
+			},
     },
     "Duo": {
-      "Wins": 45,
-      "Top5": 89,
-      "Top12": 149,
-      "KillDeathRatio": "3.27",
-      "WinPercentage": "11.03",
-      "Matches": 408,
-      "Kills": 1186,
-      "MinutesPlayed": 1465,
-      "KillsPerMatch": "2.91",
-      "KillsPerMinute": "0.81",
-      "Score": 91499
+			"Touch": {
+	      "Wins": 45,
+	      "Top5": 89,
+	      "Top12": 149,
+	      "KillDeathRatio": "3.27",
+	      "WinPercentage": "11.03",
+	      "Matches": 408,
+	      "Kills": 1186,
+	      "MinutesPlayed": 1465,
+	      "KillsPerMatch": "2.91",
+	      "KillsPerMinute": "0.81",
+	      "Score": 91499
+			},
+			"Gamepad": {
+	      "Wins": 45,
+	      "Top5": 89,
+	      "Top12": 149,
+	      "KillDeathRatio": "3.27",
+	      "WinPercentage": "11.03",
+	      "Matches": 408,
+	      "Kills": 1186,
+	      "MinutesPlayed": 1465,
+	      "KillsPerMatch": "2.91",
+	      "KillsPerMinute": "0.81",
+	      "Score": 91499
+			},
+			"KeyboardMouse": {
+	      "Wins": 45,
+	      "Top5": 89,
+	      "Top12": 149,
+	      "KillDeathRatio": "3.27",
+	      "WinPercentage": "11.03",
+	      "Matches": 408,
+	      "Kills": 1186,
+	      "MinutesPlayed": 1465,
+	      "KillsPerMatch": "2.91",
+	      "KillsPerMinute": "0.81",
+	      "Score": 91499
+			},
     },
     "Squad": {
-      "Wins": 116,
-      "Top3": 190,
-      "Top6": 305,
-      "KillDeathRatio": "3.60",
-      "WinPercentage": "14.23",
-      "Matches": 815,
-      "Kills": 2516,
-      "MinutesPlayed": 3143,
-      "KillsPerMatch": "3.09",
-      "KillsPerMinute": "0.80",
-      "Score": 253462
+			"Touch": {
+	      "Wins": 116,
+	      "Top3": 190,
+	      "Top6": 305,
+	      "KillDeathRatio": "3.60",
+	      "WinPercentage": "14.23",
+	      "Matches": 815,
+	      "Kills": 2516,
+	      "MinutesPlayed": 3143,
+	      "KillsPerMatch": "3.09",
+	      "KillsPerMinute": "0.80",
+	      "Score": 253462
+			},
+			"Gamepad": {
+	      "Wins": 116,
+	      "Top3": 190,
+	      "Top6": 305,
+	      "KillDeathRatio": "3.60",
+	      "WinPercentage": "14.23",
+	      "Matches": 815,
+	      "Kills": 2516,
+	      "MinutesPlayed": 3143,
+	      "KillsPerMatch": "3.09",
+	      "KillsPerMinute": "0.80",
+	      "Score": 253462
+			},
+			"KeyboardMouse": {
+	      "Wins": 116,
+	      "Top3": 190,
+	      "Top6": 305,
+	      "KillDeathRatio": "3.60",
+	      "WinPercentage": "14.23",
+	      "Matches": 815,
+	      "Kills": 2516,
+	      "MinutesPlayed": 3143,
+	      "KillsPerMatch": "3.09",
+	      "KillsPerMinute": "0.80",
+	      "Score": 253462
+			},
     }
   }
 }
