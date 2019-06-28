@@ -268,12 +268,18 @@ func getInputType(seed string) string {
 func (s *Session) mapStats(stats *statsResponse) FinalStats {
 	// Initialize new map with stat details objects based on group type.
 	groups := make(map[string]map[string]*statDetails)
+
+	groups[Solo] = map[string]*statDetails{}
 	groups[Solo][TOUCH] = &statDetails{}
 	groups[Solo][GAMEPAD] = &statDetails{}
 	groups[Solo][KEYBOARDMOUSE] = &statDetails{}
+
+	groups[Duo] = map[string]*statDetails{}
 	groups[Duo][TOUCH] = &statDetails{}
 	groups[Duo][GAMEPAD] = &statDetails{}
 	groups[Duo][KEYBOARDMOUSE] = &statDetails{}
+
+	groups[Squad] = map[string]*statDetails{}
 	groups[Squad][TOUCH] = &statDetails{}
 	groups[Squad][GAMEPAD] = &statDetails{}
 	groups[Squad][KEYBOARDMOUSE] = &statDetails{}
