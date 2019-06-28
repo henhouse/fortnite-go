@@ -29,6 +29,9 @@ const (
 	PC   = "pc"
 	Xbox = "xb1"
 	PS4  = "ps4"
+	TOUCH = "touch"
+	GAMEPAD = "gamepad"
+	KEYBOARDMOUSE = "keyboardmouse"
 )
 
 // tokenResponse defines the response collected by a request to the OAUTH token endpoint.
@@ -78,7 +81,13 @@ type statsRecordV1 struct {
 // Player is the hierarchical struct used to contain information regarding a player's account info and stats.
 type Player struct {
 	AccountInfo AccountInfo
-	Stats       Stats
+	Stats       FinalStats
+	RawStats		map[string]int
+}
+
+type PlayerV1 struct {
+	AccountInfo AccountInfo
+	Stats       StatsV1
 	RawStats		map[string]int
 }
 
@@ -90,7 +99,19 @@ type AccountInfo struct {
 }
 
 // Stats is the structure which holds the player's stats for the 3 different game modes offered in Battle Royal.
+type FinalStats struct {
+	Solo			*Stats
+	Duo				*Stats
+	Squad			*Stats
+}
+
 type Stats struct {
+	Touch  						statDetails
+	Gamepad   				statDetails
+	KeyboardMouse			statDetails
+}
+
+type StatsV1 struct {
 	Solo  statDetails
 	Duo   statDetails
 	Squad statDetails
@@ -229,76 +250,101 @@ func getStatType(seed string) string {
 	}
 }
 
+func getInputType(seed string) string {
+	switch {
+	case strings.Contains(seed, TOUCH):
+		return TOUCH
+	case strings.Contains(seed, GAMEPAD):
+		return GAMEPAD
+	case strings.Contains(seed, KEYBOARDMOUSE):
+		return KEYBOARDMOUSE
+	default:
+		return GAMEPAD
+	}
+}
+
 // mapStats takes a statsResponse object and converts it into a Stats object. It parses the JSON returned from Epic
 // regarding a player's stats, and maps it accordingly based on party type, as well as calculates several useful ratios.
-func (s *Session) mapStats(stats *statsResponse) Stats {
+func (s *Session) mapStats(stats *statsResponse) FinalStats {
 	// Initialize new map with stat details objects based on group type.
-	groups := make(map[string]*statDetails)
-	groups[Solo] = &statDetails{}
-	groups[Duo] = &statDetails{}
-	groups[Squad] = &statDetails{}
+	groups := make(map[string]map[string]*statDetails)
+	groups[Solo][TOUCH] = &statDetails{}
+	groups[Solo][GAMEPAD] = &statDetails{}
+	groups[Solo][KEYBOARDMOUSE] = &statDetails{}
+	groups[Duo][TOUCH] = &statDetails{}
+	groups[Duo][GAMEPAD] = &statDetails{}
+	groups[Duo][KEYBOARDMOUSE] = &statDetails{}
+	groups[Squad][TOUCH] = &statDetails{}
+	groups[Squad][GAMEPAD] = &statDetails{}
+	groups[Squad][KEYBOARDMOUSE] = &statDetails{}
 
 	// Loop through the stats for a specific user properly sorting and organizing by group type into their own objects.
 	for key, record := range stats.Stats {
 		switch {
 		case strings.Contains(key, "placetop1_"):
 			if strings.Contains(key, Squad) || strings.Contains(key, Duo) || strings.Contains(key, Solo) {
-				groups[getStatType(key)].Wins = groups[getStatType(key)].Wins + record
+				groups[getStatType(key)][getInputType(key)].Wins = groups[getStatType(key)][getInputType(key)].Wins + record
 			}
 		case strings.Contains(key, "placetop3_"):
 			if strings.Contains(key, Squad) || strings.Contains(key, Duo) || strings.Contains(key, Solo) {
-				groups[getStatType(key)].Top3 = groups[getStatType(key)].Top3 + record
+				groups[getStatType(key)][getInputType(key)].Top3 = groups[getStatType(key)][getInputType(key)].Top3 + record
 			}
 		case strings.Contains(key, "placetop5_"):
 			if strings.Contains(key, Squad) || strings.Contains(key, Duo) || strings.Contains(key, Solo) {
-				groups[getStatType(key)].Top5 = groups[getStatType(key)].Top5 + record
+				groups[getStatType(key)][getInputType(key)].Top5 = groups[getStatType(key)][getInputType(key)].Top5 + record
 			}
 		case strings.Contains(key, "placetop6_"):
 			if strings.Contains(key, Squad) || strings.Contains(key, Duo) || strings.Contains(key, Solo) {
-				groups[getStatType(key)].Top6 = groups[getStatType(key)].Top6 + record
+				groups[getStatType(key)][getInputType(key)].Top6 = groups[getStatType(key)][getInputType(key)].Top6 + record
 			}
 		case strings.Contains(key, "placetop10_"):
 			if strings.Contains(key, Squad) || strings.Contains(key, Duo) || strings.Contains(key, Solo) {
-				groups[getStatType(key)].Top10 = groups[getStatType(key)].Top10 + record
+				groups[getStatType(key)][getInputType(key)].Top10 = groups[getStatType(key)][getInputType(key)].Top10 + record
 			}
 		case strings.Contains(key, "placetop12_"):
 			if strings.Contains(key, Squad) || strings.Contains(key, Duo) || strings.Contains(key, Solo) {
-				groups[getStatType(key)].Top12 = groups[getStatType(key)].Top12 + record
+				groups[getStatType(key)][getInputType(key)].Top12 = groups[getStatType(key)][getInputType(key)].Top12 + record
 			}
 		case strings.Contains(key, "placetop25_"):
 			if strings.Contains(key, Squad) || strings.Contains(key, Duo) || strings.Contains(key, Solo) {
-				groups[getStatType(key)].Top25 = groups[getStatType(key)].Top25 + record
+				groups[getStatType(key)][getInputType(key)].Top25 = groups[getStatType(key)][getInputType(key)].Top25 + record
 			}
 		case strings.Contains(key, "matchesplayed_"):
 			if strings.Contains(key, Squad) || strings.Contains(key, Duo) || strings.Contains(key, Solo) {
-				groups[getStatType(key)].Matches = groups[getStatType(key)].Matches + record
+				groups[getStatType(key)][getInputType(key)].Matches = groups[getStatType(key)][getInputType(key)].Matches + record
 			}
 		case strings.Contains(key, "kills_"):
 			if strings.Contains(key, Squad) || strings.Contains(key, Duo) || strings.Contains(key, Solo) {
-				groups[getStatType(key)].Kills = groups[getStatType(key)].Kills + record
+				groups[getStatType(key)][getInputType(key)].Kills = groups[getStatType(key)][getInputType(key)].Kills + record
 			}
 		case strings.Contains(key, "score_"):
 			if strings.Contains(key, Squad) || strings.Contains(key, Duo) || strings.Contains(key, Solo) {
-				groups[getStatType(key)].Score = groups[getStatType(key)].Score + record
+				groups[getStatType(key)][getInputType(key)].Score = groups[getStatType(key)][getInputType(key)].Score + record
 			}
 		case strings.Contains(key, "minutesplayed_"):
 			if strings.Contains(key, Squad) || strings.Contains(key, Duo) || strings.Contains(key, Solo) {
-				groups[getStatType(key)].MinutesPlayed = groups[getStatType(key)].MinutesPlayed + record
+				groups[getStatType(key)][getInputType(key)].MinutesPlayed = groups[getStatType(key)][getInputType(key)].MinutesPlayed + record
 			}
 		}
 	}
 
 	// Build new return object using the prepared map data.
-	ret := Stats{
-		Solo:  *groups[Solo],
-		Duo:   *groups[Duo],
-		Squad: *groups[Squad],
-	}
+	ret := FinalStats{}
+	ret.Solo = &Stats{Touch: *groups[Solo][TOUCH], Gamepad: *groups[Solo][GAMEPAD], KeyboardMouse: *groups[Solo][KEYBOARDMOUSE]}
+	ret.Duo = &Stats{Touch: *groups[Duo][TOUCH], Gamepad: *groups[Duo][GAMEPAD], KeyboardMouse: *groups[Duo][KEYBOARDMOUSE]}
+	ret.Squad = &Stats{Touch: *groups[Squad][TOUCH], Gamepad: *groups[Squad][GAMEPAD], KeyboardMouse: *groups[Squad][KEYBOARDMOUSE]}
+
 
 	// Calculate additional information such as kill/death ratios, win percentages, etc.
-	calculateStatsRatios(&ret.Solo)
-	calculateStatsRatios(&ret.Duo)
-	calculateStatsRatios(&ret.Squad)
+	calculateStatsRatios(&ret.Solo.Touch)
+	calculateStatsRatios(&ret.Solo.Gamepad)
+	calculateStatsRatios(&ret.Solo.KeyboardMouse)
+	calculateStatsRatios(&ret.Duo.Touch)
+	calculateStatsRatios(&ret.Duo.Gamepad)
+	calculateStatsRatios(&ret.Duo.KeyboardMouse)
+	calculateStatsRatios(&ret.Squad.Touch)
+	calculateStatsRatios(&ret.Squad.Gamepad)
+	calculateStatsRatios(&ret.Squad.KeyboardMouse)
 
 	// Return built Stats object.
 	return ret
@@ -306,7 +352,7 @@ func (s *Session) mapStats(stats *statsResponse) Stats {
 
 // QueryPlayer V1 looks up a player by their username and platform, and returns information about that player, namely, the
 // statistics for the 3 different party modes.
-func (s *Session) QueryPlayerV1(name string, accountId string, platform string) (*Player, error) {
+func (s *Session) QueryPlayerV1(name string, accountId string, platform string) (*PlayerV1, error) {
 	if name == "" && accountId == "" {
 		return nil, errors.New("no player name or id provided")
 	}
@@ -335,7 +381,7 @@ func (s *Session) QueryPlayerV1(name string, accountId string, platform string) 
 	}
 	cleanAcctID := strings.Replace(accountId, "-", "", -1)
 
-	return &Player{
+	return &PlayerV1{
 		AccountInfo: AccountInfo{
 			AccountID: accountId,
 			Username:  acctInfoMap[cleanAcctID],
@@ -390,7 +436,7 @@ func getStatTypeV1(seed string) string {
 
 // mapStats takes a statsResponse object and converts it into a Stats object. It parses the JSON returned from Epic
 // regarding a player's stats, and maps it accordingly based on party type, as well as calculates several useful ratios.
-func (s *Session) mapStatsV1(records *statsResponseV1, platform string) Stats {
+func (s *Session) mapStatsV1(records *statsResponseV1, platform string) StatsV1 {
 	// Initialize new map with stat details objects based on group type.
 	groups := make(map[string]*statDetails)
 	groups[SoloV1] = &statDetails{}
@@ -426,7 +472,7 @@ func (s *Session) mapStatsV1(records *statsResponseV1, platform string) Stats {
 	}
 
 	// Build new return object using the prepared map data.
-	ret := Stats{
+	ret := StatsV1{
 		Solo:  *groups[SoloV1],
 		Duo:   *groups[DuoV1],
 		Squad: *groups[SquadV1],
