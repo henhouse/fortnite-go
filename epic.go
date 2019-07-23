@@ -134,6 +134,7 @@ type statDetails struct {
 	KillsPerMatch  string
 	KillsPerMinute string
 	Score          int
+	LastModified	 int
 }
 
 // GlobalWinsLeaderboard contains an array of the top X players by wins on a specific platform and party mode.
@@ -330,6 +331,10 @@ func (s *Session) mapStats(stats *statsResponse) FinalStats {
 		case strings.Contains(key, "minutesplayed_"):
 			if strings.Contains(key, Squad) || strings.Contains(key, Duo) || strings.Contains(key, Solo) {
 				groups[getStatType(key)][getInputType(key)].MinutesPlayed = groups[getStatType(key)][getInputType(key)].MinutesPlayed + record
+			}
+		case strings.Contains(key, "lastmodified_"):
+			if strings.Contains(key, Squad) || strings.Contains(key, Duo) || strings.Contains(key, Solo) {
+				groups[getStatType(key)][getInputType(key)].LastModified = record
 			}
 		}
 	}
