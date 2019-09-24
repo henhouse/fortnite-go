@@ -4,14 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"golang.org/x/net/proxy"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
- 	"os"
-	"time"
+	"os"
 	"runtime"
-	"golang.org/x/net/proxy"
+	"time"
 )
 
 // Client is our HTTP client for this package to interface with Epic's API.
@@ -32,20 +32,20 @@ func newClient(use_proxy bool) *Client {
 	// Return default HTTP client for now. @todo replace with defined client
 	if use_proxy {
 		// Setup localhost TOR proxy
-	 	torProxyUrl, err := url.Parse("socks5://127.0.0.1:9050") // port 9150 is for Tor Browser
-	 	if err != nil {
-	 		fmt.Println("Unable to parse URL:", err)
-	 		os.Exit(-1)
-	 	}
+		torProxyUrl, err := url.Parse("socks5://127.0.0.1:9050") // port 9150 is for Tor Browser
+		if err != nil {
+			fmt.Println("Unable to parse URL:", err)
+			os.Exit(-1)
+		}
 
-	 	// Setup a proxy dialer
-	 	torDialer, err := proxy.FromURL(torProxyUrl, proxy.Direct)
-	 	if err != nil {
-	 		fmt.Println("Unable to setup Tor proxy:", err)
-	 		os.Exit(-1)
-	 	}
+		// Setup a proxy dialer
+		torDialer, err := proxy.FromURL(torProxyUrl, proxy.Direct)
+		if err != nil {
+			fmt.Println("Unable to setup Tor proxy:", err)
+			os.Exit(-1)
+		}
 
-	 	torTransport := &http.Transport{Dial: torDialer.Dial}
+		torTransport := &http.Transport{Dial: torDialer.Dial}
 		return &Client{client: &http.Client{Transport: torTransport, Timeout: time.Second * 120}}
 	}
 	return &Client{client: &http.Client{}}

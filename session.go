@@ -21,7 +21,7 @@ type Session struct {
 	AccountID    string
 	ClientID     string
 
-	username      string
+	email         string
 	password      string
 	launcherToken string
 	gameToken     string
@@ -30,25 +30,41 @@ type Session struct {
 }
 
 // Create opens a new connection to Epic and authenticates into the game to obtain the necessary access tokens.
-func Create(username string, password string, launcherToken string, gameToken string, use_proxy bool) (*Session, string, error) {
+func Create(email string, password string, launcherToken string, gameToken string, use_proxy bool) (*Session, string, error) {
 	// Initialize a new client for this session to make requests with.
 	c := newClient(use_proxy)
 
+	// CSRF
+	req, err := c.NewRequest(http.MethodGet, csrfUrl, nil)
+	if err != nil {
+		return nil, "", err
+	}
+	resp, _, err := c.Do(req, nil)
+	if err != nil {
+		return nil, "", err
+	}
+	resp.Body.Close()
+	csrf := ""
+	for _, cookie := range resp.Cookies() {
+		if cookie.Name == "XSRF-TOKEN" {
+			csrf = cookie.Value
+		}
+	}
+
 	// Prepare form to request access token for launcher.
 	data := url.Values{}
-	data.Add("grant_type", "password")
-	data.Add("username", username)
+	data.Add("email", email)
 	data.Add("password", password)
-	data.Add("includePerms", "true")
+	data.Add("rememberMe", "false")
 
 	// Prepare request.
-	req, err := c.NewRequest(http.MethodPost, oauthTokenURL, strings.NewReader(data.Encode()))
+	req, err = c.NewRequest(http.MethodPost, oauthTokenURL, strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, "", err
 	}
 
 	// Set authorization header to use launcher token.
-	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBasic, launcherToken))
+	req.Header.Set("x-xsrf-token", csrf)
 
 	// Process request and decode response into tokenResponse.
 	tr := &tokenResponse{}
@@ -66,7 +82,7 @@ func Create(username string, password string, launcherToken string, gameToken st
 	}
 
 	// Set authorization header to use the access token just retrieved.
-	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBearer, tr.AccessToken))
+	req.Header.Set("x-xsrf-token", csrf)
 
 	// Process request and decode response into exchangeResponse.
 	er := &exchangeResponse{}
@@ -90,7 +106,7 @@ func Create(username string, password string, launcherToken string, gameToken st
 	}
 
 	// Set authorization header to use the game token.
-	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBasic, gameToken))
+	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBasic, launcherToken))
 
 	// Perform request.
 	resp, _, err = c.Do(req, tr)
@@ -108,7 +124,7 @@ func Create(username string, password string, launcherToken string, gameToken st
 		AccountID:    tr.AccountID,
 		ClientID:     tr.ClientID,
 
-		username:      username,
+		email:         email,
 		password:      password,
 		launcherToken: launcherToken,
 		gameToken:     gameToken,

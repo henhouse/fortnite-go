@@ -3,17 +3,19 @@ package fortnitego
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-	"log"
 )
 
 // Epic API endpoints
 const (
+	csrfUrl          = "https://www.epicgames.com/id/api/csrf"
+	loginUrl         = "https://www.epicgames.com/id/api/login"
 	oauthTokenURL    = "https://account-public-service-prod03.ol.epicgames.com/account/api/oauth/token"
-	oauthExchangeURL = "https://account-public-service-prod03.ol.epicgames.com/account/api/oauth/exchange"
+	oauthExchangeURL = "https://www.epicgames.com/id/api/exchange"
 	accountLookupURL = "https://persona-public-service-prod06.ol.epicgames.com/persona/api/public/account"
 	accountInfoURL   = "https://account-public-service-prod03.ol.epicgames.com/account/api/public/account"
 	killSessionURL   = "https://account-public-service-prod03.ol.epicgames.com/account/api/oauth/sessions/kill"
@@ -26,11 +28,11 @@ const (
 
 // Platform types
 const (
-	PC   = "pc"
-	Xbox = "xb1"
-	PS4  = "ps4"
-	TOUCH = "touch"
-	GAMEPAD = "gamepad"
+	PC            = "pc"
+	Xbox          = "xb1"
+	PS4           = "ps4"
+	TOUCH         = "touch"
+	GAMEPAD       = "gamepad"
 	KEYBOARDMOUSE = "keyboardmouse"
 )
 
@@ -64,10 +66,10 @@ type statsResponse statsRecord
 type statsResponseV1 []statsRecordV1
 
 type statsRecord struct {
-	StartTime			int								`json:"startTime"`
-	EndTime				int								`json:"endTime"`
-	Stats					map[string]int		`json:"stats"`
-	AccountID			string						`json:"accountId"`
+	StartTime int            `json:"startTime"`
+	EndTime   int            `json:"endTime"`
+	Stats     map[string]int `json:"stats"`
+	AccountID string         `json:"accountId"`
 }
 
 // statsRecord defines a single entry in a statsResponse.
@@ -82,13 +84,13 @@ type statsRecordV1 struct {
 type Player struct {
 	AccountInfo AccountInfo
 	Stats       FinalStats
-	RawStats		map[string]int
+	RawStats    map[string]int
 }
 
 type PlayerV1 struct {
 	AccountInfo AccountInfo
 	Stats       StatsV1
-	RawStats		map[string]int
+	RawStats    map[string]int
 }
 
 // AccountInfo contains basic information about the user.
@@ -100,15 +102,15 @@ type AccountInfo struct {
 
 // Stats is the structure which holds the player's stats for the 3 different game modes offered in Battle Royal.
 type FinalStats struct {
-	Solo			*Stats
-	Duo				*Stats
-	Squad			*Stats
+	Solo  *Stats
+	Duo   *Stats
+	Squad *Stats
 }
 
 type Stats struct {
-	Touch  						statDetails
-	Gamepad   				statDetails
-	KeyboardMouse			statDetails
+	Touch         statDetails
+	Gamepad       statDetails
+	KeyboardMouse statDetails
 }
 
 type StatsV1 struct {
@@ -134,7 +136,7 @@ type statDetails struct {
 	KillsPerMatch  string
 	KillsPerMinute string
 	Score          int
-	LastModified	 int
+	LastModified   int
 }
 
 // GlobalWinsLeaderboard contains an array of the top X players by wins on a specific platform and party mode.
@@ -179,7 +181,7 @@ func (s *Session) QueryPlayer(name string, accountId string) (*Player, error) {
 			AccountID: accountId,
 			Username:  acctInfoMap[cleanAcctID],
 		},
-		Stats: s.mapStats(sr),
+		Stats:    s.mapStats(sr),
 		RawStats: sr.Stats,
 	}, nil
 }
@@ -344,7 +346,6 @@ func (s *Session) mapStats(stats *statsResponse) FinalStats {
 	ret.Solo = &Stats{Touch: *groups[Solo][TOUCH], Gamepad: *groups[Solo][GAMEPAD], KeyboardMouse: *groups[Solo][KEYBOARDMOUSE]}
 	ret.Duo = &Stats{Touch: *groups[Duo][TOUCH], Gamepad: *groups[Duo][GAMEPAD], KeyboardMouse: *groups[Duo][KEYBOARDMOUSE]}
 	ret.Squad = &Stats{Touch: *groups[Squad][TOUCH], Gamepad: *groups[Squad][GAMEPAD], KeyboardMouse: *groups[Squad][KEYBOARDMOUSE]}
-
 
 	// Calculate additional information such as kill/death ratios, win percentages, etc.
 	calculateStatsRatios(&ret.Solo.Touch)
