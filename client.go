@@ -2,11 +2,9 @@ package fortnitego
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"golang.org/x/net/proxy"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -84,12 +82,6 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, string, e
 		return nil, "", err
 	}
 
-	// Check response status codes to determine success/failure.
-	device_id, err := checkStatus(resp)
-	if err != nil {
-		return nil, device_id, err
-	}
-
 	// If an interface was provided, decode response body into it.
 	if v != nil {
 		err = json.NewDecoder(resp.Body).Decode(v)
@@ -99,23 +91,4 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, string, e
 	}
 
 	return resp, "", nil
-}
-
-// checkStatus checks the HTTP response status code for unsuccessful requests.
-// @todo decode error into Epic Error-JSON object to determine better errors.go?
-func checkStatus(resp *http.Response) (string, error) {
-	switch resp.StatusCode {
-	case http.StatusOK, http.StatusNoContent:
-		return "", nil
-	default:
-		b, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return "", errors.New("unsuccessful response returned and cannot read body: " + err.Error())
-		}
-		defer resp.Body.Close()
-
-		device_id := resp.Header.Get("X-Epic-Device-ID")
-
-		return device_id, errors.New(string(b))
-	}
 }

@@ -58,18 +58,18 @@ func Create(email string, password string, launcherToken string, gameToken strin
 	data.Add("rememberMe", "false")
 
 	// Prepare request.
-	req, err = c.NewRequest(http.MethodPost, oauthTokenURL, strings.NewReader(data.Encode()))
+	req, err = c.NewRequest(http.MethodPost, loginUrl, strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, "", err
 	}
 
-	// Set authorization header to use launcher token.
+	// Set authorization header to use csrf.
 	req.Header.Set("x-xsrf-token", csrf)
 
 	// Process request and decode response into tokenResponse.
-	tr := &tokenResponse{}
-	resp, device_id, err := c.Do(req, tr)
+	resp, device_id, err := c.Do(req, nil)
 	if err != nil {
+		log.Println("ERR: ", err)
 		return nil, device_id, err
 	}
 	resp.Body.Close()
@@ -109,8 +109,10 @@ func Create(email string, password string, launcherToken string, gameToken strin
 	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBasic, launcherToken))
 
 	// Perform request.
+	tr := &tokenResponse{}
 	resp, _, err = c.Do(req, tr)
 	if err != nil {
+		log.Println("ERR: ", err)
 		return nil, "", err
 	}
 	resp.Body.Close()
