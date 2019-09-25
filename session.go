@@ -41,75 +41,71 @@ func Create(email string, password string, launcherToken string, gameToken strin
 	}
 	resp, _, err := c.Do(req, nil)
 	if err != nil {
+		log.Println("ERR: ", err)
 		return nil, "", err
 	}
 	resp.Body.Close()
 	csrf := ""
-	for _, cookie := range resp.Cookies() {
+	cookies := resp.Cookies()
+	for _, cookie := range cookies {
 		if cookie.Name == "XSRF-TOKEN" {
 			csrf = cookie.Value
 		}
 	}
 
-	// Prepare form to request access token for launcher.
+	// FIRST TOKEN
 	data := url.Values{}
 	data.Add("email", email)
 	data.Add("password", password)
 	data.Add("rememberMe", "false")
 
-	// Prepare request.
 	req, err = c.NewRequest(http.MethodPost, loginUrl, strings.NewReader(data.Encode()))
 	if err != nil {
+		log.Println("ERR: ", err)
 		return nil, "", err
 	}
 
-	// Set authorization header to use csrf.
 	req.Header.Set("x-xsrf-token", csrf)
 
-	// Process request and decode response into tokenResponse.
-	resp, device_id, err := c.Do(req, nil)
+	tr := &tokenResponse{}
+	resp, device_id, err := c.Do(req, tr)
 	if err != nil {
 		log.Println("ERR: ", err)
 		return nil, device_id, err
 	}
 	resp.Body.Close()
 
-	///////////////////
-	// Prepare new request for OAUTH exchange.
+	// EXCHANGE
 	req, err = c.NewRequest(http.MethodGet, oauthExchangeURL, nil)
 	if err != nil {
+		log.Println("ERR: ", err)
 		return nil, "", err
 	}
-
-	// Set authorization header to use the access token just retrieved.
 	req.Header.Set("x-xsrf-token", csrf)
 
-	// Process request and decode response into exchangeResponse.
 	er := &exchangeResponse{}
 	resp, _, err = c.Do(req, er)
 	if err != nil {
+		log.Println("ERR: ", err)
 		return nil, "", err
 	}
 	resp.Body.Close()
 
-	////////////////////
-	// Prepare new form for 2nd OAUTH token request for game client.
+	// TOKEN 2
 	data = url.Values{}
 	data.Add("grant_type", "exchange_code")
 	data.Add("exchange_code", er.Code)
 	data.Add("includePerms", "true")
-	data.Add("token_type", "eg1") // should this be eg1???
+	data.Add("token_type", "eg1")
 
 	req, err = c.NewRequest(http.MethodPost, oauthTokenURL, strings.NewReader(data.Encode()))
 	if err != nil {
+		log.Println("ERR: ", err)
 		return nil, "", err
 	}
-
-	// Set authorization header to use the game token.
 	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBasic, launcherToken))
 
-	// Perform request.
-	tr := &tokenResponse{}
+	tr = &tokenResponse{}
 	resp, _, err = c.Do(req, tr)
 	if err != nil {
 		log.Println("ERR: ", err)

@@ -2,10 +2,14 @@ package fortnitego
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"golang.org/x/net/proxy"
 	"io"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"runtime"
@@ -44,9 +48,11 @@ func newClient(use_proxy bool) *Client {
 		}
 
 		torTransport := &http.Transport{Dial: torDialer.Dial}
-		return &Client{client: &http.Client{Transport: torTransport, Timeout: time.Second * 120}}
+		cookieJar, _ := cookiejar.New(nil)
+		return &Client{client: &http.Client{Transport: torTransport, Timeout: time.Second * 120, Jar: cookieJar}}
 	}
-	return &Client{client: &http.Client{}}
+	cookieJar, _ := cookiejar.New(nil)
+	return &Client{client: &http.Client{Jar: cookieJar}}
 }
 
 // NewRequest prepares a new HTTP request and sets the necessary headers.
@@ -79,16 +85,43 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, string, e
 	// Process request using session's client. Collect response.
 	resp, err := c.client.Do(req)
 	if err != nil {
+		log.Println("ERR: ", err)
 		return nil, "", err
+	}
+
+	// Check response status codes to determine success/failure.
+	device_id, err := checkStatus(resp)
+	if err != nil {
+		return nil, device_id, err
 	}
 
 	// If an interface was provided, decode response body into it.
 	if v != nil {
 		err = json.NewDecoder(resp.Body).Decode(v)
 		if err != nil && err != io.EOF {
+			log.Println("ERR: ", err)
 			return resp, "", err
 		}
 	}
 
 	return resp, "", nil
+}
+
+// checkStatus checks the HTTP response status code for unsuccessful requests.
+// @todo decode error into Epic Error-JSON object to determine better errors.go?
+func checkStatus(resp *http.Response) (string, error) {
+	switch resp.StatusCode {
+	case http.StatusOK, http.StatusNoContent:
+		return "", nil
+	default:
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return "", errors.New("unsuccessful response returned and cannot read body: " + err.Error())
+		}
+		defer resp.Body.Close()
+
+		device_id := resp.Header.Get("X-Epic-Device-ID")
+
+		return device_id, errors.New(string(b))
+	}
 }
