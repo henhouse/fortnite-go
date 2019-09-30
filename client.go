@@ -30,7 +30,7 @@ var userAgent = fmt.Sprintf(
 	Version, runtime.Version(), runtime.GOOS, runtime.GOARCH,
 )
 
-func newClient(use_proxy bool) *Client {
+func newClient(use_proxy bool, cookies []*http.Cookie) *Client {
 	// Return default HTTP client for now. @todo replace with defined client
 	if use_proxy {
 		// Setup localhost TOR proxy
@@ -49,9 +49,17 @@ func newClient(use_proxy bool) *Client {
 
 		torTransport := &http.Transport{Dial: torDialer.Dial}
 		cookieJar, _ := cookiejar.New(nil)
+		if cookies != nil {
+			cookie_url, _ := url.Parse("https://epicgames.com/id")
+			cookieJar.SetCookies(cookie_url, cookies)
+		}
 		return &Client{client: &http.Client{Transport: torTransport, Timeout: time.Second * 120, Jar: cookieJar}}
 	}
 	cookieJar, _ := cookiejar.New(nil)
+	if cookies != nil {
+		cookie_url, _ := url.Parse("https://epicgames.com/id")
+		cookieJar.SetCookies(cookie_url, cookies)
+	}
 	return &Client{client: &http.Client{Jar: cookieJar}}
 }
 
@@ -81,18 +89,18 @@ var (
 )
 
 // Do processes a prepared HTTP request with the client provided. An interface is passed in to decode the response into.
-func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, string, error) {
+func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, int, error) {
 	// Process request using session's client. Collect response.
 	resp, err := c.client.Do(req)
 	if err != nil {
 		log.Println("ERR: ", err)
-		return nil, "", err
+		return nil, 0, err
 	}
 
 	// Check response status codes to determine success/failure.
-	device_id, err := checkStatus(resp)
+	status_code, err := checkStatus(resp)
 	if err != nil {
-		return nil, device_id, err
+		return nil, status_code, err
 	}
 
 	// If an interface was provided, decode response body into it.
@@ -100,28 +108,28 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, string, e
 		err = json.NewDecoder(resp.Body).Decode(v)
 		if err != nil && err != io.EOF {
 			log.Println("ERR: ", err)
-			return resp, "", err
+			return resp, 0, err
 		}
 	}
 
-	return resp, "", nil
+	return resp, 0, nil
 }
 
 // checkStatus checks the HTTP response status code for unsuccessful requests.
 // @todo decode error into Epic Error-JSON object to determine better errors.go?
-func checkStatus(resp *http.Response) (string, error) {
+func checkStatus(resp *http.Response) (int, error) {
 	switch resp.StatusCode {
 	case http.StatusOK, http.StatusNoContent:
-		return "", nil
+		return 0, nil
 	default:
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return "", errors.New("unsuccessful response returned and cannot read body: " + err.Error())
+			return 0, errors.New("unsuccessful response returned and cannot read body: " + err.Error())
 		}
 		defer resp.Body.Close()
 
-		device_id := resp.Header.Get("X-Epic-Device-ID")
+		status_code := resp.StatusCode
 
-		return device_id, errors.New(string(b))
+		return status_code, errors.New(string(b))
 	}
 }

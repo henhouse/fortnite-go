@@ -14,6 +14,7 @@ import (
 const (
 	csrfUrl          = "https://www.epicgames.com/id/api/csrf"
 	loginUrl         = "https://www.epicgames.com/id/api/login"
+	mfaUrl					 = "https://www.epicgames.com/id/api/login/mfa"
 	oauthTokenURL    = "https://account-public-service-prod03.ol.epicgames.com/account/api/oauth/token"
 	oauthExchangeURL = "https://www.epicgames.com/id/api/exchange"
 	accountLookupURL = "https://persona-public-service-prod06.ol.epicgames.com/persona/api/public/account"
