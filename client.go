@@ -4,16 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/proxy"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
-	"net/url"
-	"os"
 	"runtime"
-	"time"
 )
 
 // Client is our HTTP client for this package to interface with Epic's API.
@@ -30,36 +26,9 @@ var userAgent = fmt.Sprintf(
 	Version, runtime.Version(), runtime.GOOS, runtime.GOARCH,
 )
 
-func newClient(use_proxy bool, cookies []*http.Cookie) *Client {
+func newClient() *Client {
 	// Return default HTTP client for now. @todo replace with defined client
-	if use_proxy {
-		// Setup localhost TOR proxy
-		torProxyUrl, err := url.Parse("socks5://127.0.0.1:9050") // port 9150 is for Tor Browser
-		if err != nil {
-			fmt.Println("Unable to parse URL:", err)
-			os.Exit(-1)
-		}
-
-		// Setup a proxy dialer
-		torDialer, err := proxy.FromURL(torProxyUrl, proxy.Direct)
-		if err != nil {
-			fmt.Println("Unable to setup Tor proxy:", err)
-			os.Exit(-1)
-		}
-
-		torTransport := &http.Transport{Dial: torDialer.Dial}
-		cookieJar, _ := cookiejar.New(nil)
-		if cookies != nil {
-			cookie_url, _ := url.Parse("https://epicgames.com/id")
-			cookieJar.SetCookies(cookie_url, cookies)
-		}
-		return &Client{client: &http.Client{Transport: torTransport, Timeout: time.Second * 120, Jar: cookieJar}}
-	}
 	cookieJar, _ := cookiejar.New(nil)
-	if cookies != nil {
-		cookie_url, _ := url.Parse("https://epicgames.com/id")
-		cookieJar.SetCookies(cookie_url, cookies)
-	}
 	return &Client{client: &http.Client{Jar: cookieJar}}
 }
 

@@ -31,32 +31,36 @@ type Session struct {
 }
 
 // Create opens a new connection to Epic and authenticates into the game to obtain the necessary access tokens.
-func Create(email string, password string, launcherToken string, gameToken string, use_proxy bool) (*Session, int, []*http.Cookie, error) {
+func Create(email string, password string, launcherToken string, gameToken string) (*Session, int, error) {
 	// Initialize a new client for this session to make requests with.
-	c := newClient(use_proxy, nil)
+	c := newClient()
 
 	// CSRF
 	req, err := c.NewRequest(http.MethodGet, csrfUrl, nil)
 	if err != nil {
-		return nil, 0, nil, err
+		return nil, 0, err
 	}
 	resp, _, err := c.Do(req, nil)
 	if err != nil {
 		log.Println("ERR: ", err)
-		return nil, 0, nil, err
+		return nil, 0, err
 	}
 	resp.Body.Close()
 	cookieJar, _ := cookiejar.New(nil)
 	cookie_url, _ := url.Parse("http://epicgames.com/id")
-	cookieJar.SetCookies(cookie_url, resp.Cookies())
 
 	csrf := ""
 	cookies := resp.Cookies()
 	for _, cookie := range cookies {
+		if cookie.Domain == "" {
+			cookie.Domain = ".epicgames.com"
+		}
 		if cookie.Name == "XSRF-TOKEN" {
 			csrf = cookie.Value
 		}
 	}
+
+	cookieJar.SetCookies(cookie_url, resp.Cookies())
 
 	// FIRST TOKEN
 	data := url.Values{}
@@ -67,7 +71,7 @@ func Create(email string, password string, launcherToken string, gameToken strin
 	req, err = c.NewRequest(http.MethodPost, loginUrl, strings.NewReader(data.Encode()))
 	if err != nil {
 		log.Println("ERR: ", err)
-		return nil, 0, nil, err
+		return nil, 0, err
 	}
 	req.Header.Set("x-xsrf-token", csrf)
 
@@ -75,7 +79,7 @@ func Create(email string, password string, launcherToken string, gameToken strin
 	resp, status_code, err := c.Do(req, tr)
 	if err != nil {
 		log.Println("ERR: ", err)
-		return nil, status_code, cookies, err
+		return nil, status_code, err
 	}
 	resp.Body.Close()
 
@@ -83,7 +87,7 @@ func Create(email string, password string, launcherToken string, gameToken strin
 	req, err = c.NewRequest(http.MethodGet, oauthExchangeURL, nil)
 	if err != nil {
 		log.Println("ERR: ", err)
-		return nil, 0, nil, err
+		return nil, 0, err
 	}
 	req.Header.Set("x-xsrf-token", csrf)
 
@@ -91,7 +95,7 @@ func Create(email string, password string, launcherToken string, gameToken strin
 	resp, _, err = c.Do(req, er)
 	if err != nil {
 		log.Println("ERR: ", err)
-		return nil, 0, nil, err
+		return nil, 0, err
 	}
 	resp.Body.Close()
 
@@ -105,7 +109,7 @@ func Create(email string, password string, launcherToken string, gameToken strin
 	req, err = c.NewRequest(http.MethodPost, oauthTokenURL, strings.NewReader(data.Encode()))
 	if err != nil {
 		log.Println("ERR: ", err)
-		return nil, 0, nil, err
+		return nil, 0, err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBasic, launcherToken))
 
@@ -113,7 +117,7 @@ func Create(email string, password string, launcherToken string, gameToken strin
 	resp, _, err = c.Do(req, tr)
 	if err != nil {
 		log.Println("ERR: ", err)
-		return nil, 0, nil, err
+		return nil, 0, err
 	}
 	resp.Body.Close()
 
@@ -136,54 +140,47 @@ func Create(email string, password string, launcherToken string, gameToken strin
 	go ret.renewProcess()
 
 	log.Println("Session successfully created.")
-	return ret, 0, nil, nil
+	return ret, 0, nil
 }
 
 // Create opens a new connection to Epic and authenticates into the game to obtain the necessary access tokens.
-func Create2fa(code string, cookies []*http.Cookie, launcherToken string, gameToken string) (*Session, error) {
-	// Initialize a new client for this session to make requests with.
-	c := newClient(false, cookies)
-
-	cookieJar, _ := cookiejar.New(nil)
-	cookie_url, _ := url.Parse("http://epicgames.com/id")
-	cookieJar.SetCookies(cookie_url, cookies)
-
-	csrf := ""
-	for _, cookie := range cookies {
-		if cookie.Name == "XSRF-TOKEN" {
-			csrf = cookie.Value
-		}
-	}
+func Create2fa(email string, password string, code string, launcherToken string, gameToken string) (*Session, error) {
+	c := newClient()
 
 	// CSRF
 	req, err := c.NewRequest(http.MethodGet, csrfUrl, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("x-xsrf-token", csrf)
-
 	resp, _, err := c.Do(req, nil)
 	if err != nil {
 		log.Println("ERR: ", err)
 		return nil, err
 	}
 	resp.Body.Close()
+	cookieJar, _ := cookiejar.New(nil)
+	cookie_url, _ := url.Parse("http://epicgames.com/id")
 
-	// cookieJar.SetCookies(cookie_url, resp.Cookies())
-	cookies = resp.Cookies()
+	csrf := ""
+	cookies := resp.Cookies()
 	for _, cookie := range cookies {
+		if cookie.Domain == "" {
+			cookie.Domain = ".epicgames.com"
+		}
 		if cookie.Name == "XSRF-TOKEN" {
 			csrf = cookie.Value
 		}
 	}
 
+	cookieJar.SetCookies(cookie_url, resp.Cookies())
+
 	// FIRST TOKEN
 	data := url.Values{}
-	data.Add("code", code)
-	data.Add("method", "authenticator")
-	data.Add("rememberDevice", "false")
+	data.Add("email", email)
+	data.Add("password", password)
+	data.Add("rememberMe", "true")
 
-	req, err = c.NewRequest(http.MethodPost, mfaUrl, strings.NewReader(data.Encode()))
+	req, err = c.NewRequest(http.MethodPost, loginUrl, strings.NewReader(data.Encode()))
 	if err != nil {
 		log.Println("ERR: ", err)
 		return nil, err
@@ -193,67 +190,105 @@ func Create2fa(code string, cookies []*http.Cookie, launcherToken string, gameTo
 	tr := &tokenResponse{}
 	resp, _, err = c.Do(req, tr)
 	if err != nil {
-		log.Println("ERR: ", err)
-		return nil, err
+		// CSRF
+		req, err := c.NewRequest(http.MethodGet, csrfUrl, nil)
+		if err != nil {
+			return nil, err
+		}
+		resp, _, err := c.Do(req, nil)
+		if err != nil {
+			return nil, err
+		}
+		resp.Body.Close()
+		cookieJar, _ = cookiejar.New(nil)
+		cookie_url, _ = url.Parse("http://epicgames.com/id")
+
+		// cookieJar.SetCookies(cookie_url, resp.Cookies())
+		cookies = resp.Cookies()
+		csrf := ""
+		for _, cookie := range cookies {
+			if cookie.Name == "XSRF-TOKEN" {
+				csrf = cookie.Value
+			}
+		}
+		cookieJar.SetCookies(cookie_url, resp.Cookies())
+
+		// FIRST TOKEN
+		data := url.Values{}
+		data.Add("code", code)
+		data.Add("method", "authenticator")
+		data.Add("rememberDevice", "false")
+
+		req, err = c.NewRequest(http.MethodPost, mfaUrl, strings.NewReader(data.Encode()))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("x-xsrf-token", csrf)
+
+		tr := &tokenResponse{}
+		resp, _, err = c.Do(req, tr)
+		if err != nil {
+			return nil, err
+		}
+		resp.Body.Close()
+
+		// EXCHANGE
+		req, err = c.NewRequest(http.MethodGet, oauthExchangeURL, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("x-xsrf-token", csrf)
+
+		er := &exchangeResponse{}
+		resp, _, err = c.Do(req, er)
+		if err != nil {
+			return nil, err
+		}
+		resp.Body.Close()
+
+		// TOKEN 2
+		data = url.Values{}
+		data.Add("grant_type", "exchange_code")
+		data.Add("exchange_code", er.Code)
+		data.Add("includePerms", "true")
+		data.Add("token_type", "eg1")
+
+		req, err = c.NewRequest(http.MethodPost, oauthTokenURL, strings.NewReader(data.Encode()))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBasic, launcherToken))
+
+		tr = &tokenResponse{}
+		resp, _, err = c.Do(req, tr)
+		if err != nil {
+			return nil, err
+		}
+		resp.Body.Close()
+
+		// Create new session object from data retrieved.
+		ret := &Session{
+			client:       c,
+			AccessToken:  tr.AccessToken,
+			ExpiresAt:    tr.ExpiresAt,
+			RefreshToken: tr.RefreshToken,
+			AccountID:    tr.AccountID,
+			ClientID:     tr.ClientID,
+
+			launcherToken: launcherToken,
+			gameToken:     gameToken,
+		}
+
+		// Spawn goroutine to handle automatic renewal of access token.
+		go ret.renewProcess()
+
+		log.Println("Session successfully created.")
+		return ret, nil
+		// return nil, status_code, cookies, err
 	}
 	resp.Body.Close()
 
-	// EXCHANGE
-	req, err = c.NewRequest(http.MethodGet, oauthExchangeURL, nil)
-	if err != nil {
-		log.Println("ERR: ", err)
-		return nil, err
-	}
-	req.Header.Set("x-xsrf-token", csrf)
-
-	er := &exchangeResponse{}
-	resp, _, err = c.Do(req, er)
-	if err != nil {
-		log.Println("ERR: ", err)
-		return nil, err
-	}
-	resp.Body.Close()
-
-	// TOKEN 2
-	data = url.Values{}
-	data.Add("grant_type", "exchange_code")
-	data.Add("exchange_code", er.Code)
-	data.Add("includePerms", "true")
-	data.Add("token_type", "eg1")
-
-	req, err = c.NewRequest(http.MethodPost, oauthTokenURL, strings.NewReader(data.Encode()))
-	if err != nil {
-		log.Println("ERR: ", err)
-		return nil, err
-	}
-	req.Header.Set("Authorization", fmt.Sprintf("%v %v", AuthBasic, launcherToken))
-
-	tr = &tokenResponse{}
-	resp, _, err = c.Do(req, tr)
-	if err != nil {
-		log.Println("ERR: ", err)
-		return nil, err
-	}
-	resp.Body.Close()
-
-	// Create new session object from data retrieved.
-	ret := &Session{
-		client:       c,
-		AccessToken:  tr.AccessToken,
-		ExpiresAt:    tr.ExpiresAt,
-		RefreshToken: tr.RefreshToken,
-		AccountID:    tr.AccountID,
-		ClientID:     tr.ClientID,
-
-		launcherToken: launcherToken,
-		gameToken:     gameToken,
-	}
-
-	// Spawn goroutine to handle automatic renewal of access token.
-	go ret.renewProcess()
-
-	log.Println("Session successfully created.")
-	return ret, nil
+	return nil, nil
 }
 
 // Refresh renews a session by obtaining a new access token, and replacing the hold one. Intended use it for an
