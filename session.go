@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
-	"net/http/cookiejar"
 )
 
 // Session holds connection information regarding a successful authentication with an Epic account to Epic's API. Will

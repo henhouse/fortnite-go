@@ -14,7 +14,7 @@ import (
 const (
 	csrfUrl          = "https://www.epicgames.com/id/api/csrf"
 	loginUrl         = "https://www.epicgames.com/id/api/login"
-	mfaUrl					 = "https://www.epicgames.com/id/api/login/mfa"
+	mfaUrl           = "https://www.epicgames.com/id/api/login/mfa"
 	oauthTokenURL    = "https://account-public-service-prod03.ol.epicgames.com/account/api/oauth/token"
 	oauthExchangeURL = "https://www.epicgames.com/id/api/exchange"
 	accountLookupURL = "https://persona-public-service-prod06.ol.epicgames.com/persona/api/public/account"
@@ -103,9 +103,11 @@ type AccountInfo struct {
 
 // Stats is the structure which holds the player's stats for the 3 different game modes offered in Battle Royal.
 type FinalStats struct {
-	Solo  *Stats
-	Duo   *Stats
-	Squad *Stats
+	Solo                  *Stats
+	Duo                   *Stats
+	Squad                 *Stats
+	Level                 int
+	PercentUntilNextLevel int
 }
 
 type Stats struct {
@@ -288,6 +290,9 @@ func (s *Session) mapStats(stats *statsResponse) FinalStats {
 	groups[Squad][GAMEPAD] = &statDetails{}
 	groups[Squad][KEYBOARDMOUSE] = &statDetails{}
 
+	var level int
+	var percent_until_next_level int
+
 	// Loop through the stats for a specific user properly sorting and organizing by group type into their own objects.
 	for key, record := range stats.Stats {
 		switch {
@@ -339,6 +344,12 @@ func (s *Session) mapStats(stats *statsResponse) FinalStats {
 			if strings.Contains(key, Squad) || strings.Contains(key, Duo) || strings.Contains(key, Solo) {
 				groups[getStatType(key)][getInputType(key)].LastModified = record
 			}
+		case strings.Contains(key, "social_bp_level"):
+			parse_level := float64(record / 100)
+			string_parsed := fmt.Sprintf("%f", parse_level)
+			string_split := strings.Split(string_parsed, ".")
+			level, _ = strconv.Atoi(string_split[0])
+			percent_until_next_level, _ = strconv.Atoi(string_split[1])
 		}
 	}
 
@@ -347,6 +358,8 @@ func (s *Session) mapStats(stats *statsResponse) FinalStats {
 	ret.Solo = &Stats{Touch: *groups[Solo][TOUCH], Gamepad: *groups[Solo][GAMEPAD], KeyboardMouse: *groups[Solo][KEYBOARDMOUSE]}
 	ret.Duo = &Stats{Touch: *groups[Duo][TOUCH], Gamepad: *groups[Duo][GAMEPAD], KeyboardMouse: *groups[Duo][KEYBOARDMOUSE]}
 	ret.Squad = &Stats{Touch: *groups[Squad][TOUCH], Gamepad: *groups[Squad][GAMEPAD], KeyboardMouse: *groups[Squad][KEYBOARDMOUSE]}
+	ret.Level = level
+	ret.PercentUntilNextLevel = percent_until_next_level
 
 	// Calculate additional information such as kill/death ratios, win percentages, etc.
 	calculateStatsRatios(&ret.Solo.Touch)
