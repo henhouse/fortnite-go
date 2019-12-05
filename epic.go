@@ -23,7 +23,7 @@ const (
 
 	serverStatusURL    = "https://lightswitch-public-service-prod06.ol.epicgames.com/lightswitch/api/service/bulk/status?serviceId=Fortnite"
 	accountStatsURL    = "https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/stats/accountId"
-	accountStatsV2URL  = "https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/statsv2/account"
+	accountStatsV2URL  = "https://statsproxy-public-service-live.ol.epicgames.com/statsproxy/api/statsv2/account"
 	winsLeaderboardURL = "https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/leaderboards/type/global/stat/br_placetop1_%v_m0%v/window/weekly"
 )
 
