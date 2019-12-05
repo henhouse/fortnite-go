@@ -173,6 +173,10 @@ func (s *Session) QueryPlayer(name string, accountId string) (*Player, error) {
 		return nil, err
 	}
 
+	if len(sr.Stats) == 0 {
+		return nil, errors.New("Error reading stats. Please check Settings > Career Leaderboard Stats")
+	}
+
 	acctInfoMap, err := s.getAccountNames([]string{accountId})
 	if err != nil {
 		return nil, err
