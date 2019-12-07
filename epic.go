@@ -84,7 +84,7 @@ type statsRecordV1 struct {
 // Player is the hierarchical struct used to contain information regarding a player's account info and stats.
 type Player struct {
 	AccountInfo AccountInfo
-	Stats       FinalStats
+	Stats       *FinalStats
 	RawStats    map[string]int
 }
 
@@ -275,7 +275,7 @@ func getInputType(seed string) string {
 
 // mapStats takes a statsResponse object and converts it into a Stats object. It parses the JSON returned from Epic
 // regarding a player's stats, and maps it accordingly based on party type, as well as calculates several useful ratios.
-func (s *Session) mapStats(stats *statsResponse) FinalStats {
+func (s *Session) mapStats(stats *statsResponse) *FinalStats {
 	// Initialize new map with stat details objects based on group type.
 	groups := make(map[string]map[string]*statDetails)
 
@@ -358,7 +358,7 @@ func (s *Session) mapStats(stats *statsResponse) FinalStats {
 	}
 
 	// Build new return object using the prepared map data.
-	ret := FinalStats{}
+	ret := &FinalStats{}
 	ret.Solo = &Stats{Touch: *groups[Solo][TOUCH], Gamepad: *groups[Solo][GAMEPAD], KeyboardMouse: *groups[Solo][KEYBOARDMOUSE]}
 	ret.Duo = &Stats{Touch: *groups[Duo][TOUCH], Gamepad: *groups[Duo][GAMEPAD], KeyboardMouse: *groups[Duo][KEYBOARDMOUSE]}
 	ret.Squad = &Stats{Touch: *groups[Squad][TOUCH], Gamepad: *groups[Squad][GAMEPAD], KeyboardMouse: *groups[Squad][KEYBOARDMOUSE]}
