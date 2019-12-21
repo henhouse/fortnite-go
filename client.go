@@ -1,4 +1,4 @@
-package fornitego
+package fortnitego
 
 import (
 	"encoding/json"
@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"net/http/cookiejar"
 	"runtime"
 )
 
@@ -26,7 +28,8 @@ var userAgent = fmt.Sprintf(
 
 func newClient() *Client {
 	// Return default HTTP client for now. @todo replace with defined client
-	return &Client{client: &http.Client{}}
+	cookieJar, _ := cookiejar.New(nil)
+	return &Client{client: &http.Client{Jar: cookieJar}}
 }
 
 // NewRequest prepares a new HTTP request and sets the necessary headers.
@@ -55,43 +58,47 @@ var (
 )
 
 // Do processes a prepared HTTP request with the client provided. An interface is passed in to decode the response into.
-func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
+func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, int, error) {
 	// Process request using session's client. Collect response.
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return nil, err
+		log.Println("ERR: ", err)
+		return nil, 0, err
 	}
 
 	// Check response status codes to determine success/failure.
-	err = checkStatus(resp)
+	status_code, err := checkStatus(resp)
 	if err != nil {
-		return nil, err
+		return nil, status_code, err
 	}
 
 	// If an interface was provided, decode response body into it.
 	if v != nil {
 		err = json.NewDecoder(resp.Body).Decode(v)
 		if err != nil && err != io.EOF {
-			return resp, err
+			log.Println("ERR: ", err)
+			return resp, 0, err
 		}
 	}
 
-	return resp, nil
+	return resp, 0, nil
 }
 
 // checkStatus checks the HTTP response status code for unsuccessful requests.
 // @todo decode error into Epic Error-JSON object to determine better errors.go?
-func checkStatus(resp *http.Response) error {
+func checkStatus(resp *http.Response) (int, error) {
 	switch resp.StatusCode {
 	case http.StatusOK, http.StatusNoContent:
-		return nil
+		return 0, nil
 	default:
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return errors.New("unsuccessful response returned and cannot read body: " + err.Error())
+			return 0, errors.New("unsuccessful response returned and cannot read body: " + err.Error())
 		}
 		defer resp.Body.Close()
 
-		return errors.New(fmt.Sprintf("unsuccessful response returned: %v %v", resp.StatusCode, string(b)))
+		status_code := resp.StatusCode
+
+		return status_code, errors.New(string(b))
 	}
 }

@@ -14,6 +14,20 @@ To obtain header tokens:
 *   Launch Fortnite
 *   You will see again a request with _/account/api/oauth/token_. Click on it and then click `Inspectors` tab to get the header (Copy `Authorization` header content and remove "basic ") => **This header is your Game Token**
 
+## V2 Stats
+This package has been updated to the latest V2 stats from Epic. There are no more platforms. All stats are broken up between input type (keyboardmouse, gamepad, and touch).
+
+## V1 Stats Compatibility - *Deprecated*
+To retrieve stats via V1 stats, please use the QueryPlayerV1 method:
+
+```go
+// Retrieve player info and stats by Account ID.
+player, err := s.QueryPlayerV1("", "AccountID")
+if err != nil {
+	fmt.Println(err)
+}
+```
+
 ## Usage
 
 See [Godoc](https://godoc.org/github.com/henhouse/fortnite-go) for in-depth documentation.
@@ -22,16 +36,16 @@ See [Godoc](https://godoc.org/github.com/henhouse/fortnite-go) for in-depth docu
 To retrieve a player's information and statistics for Battle Royale:
 ```go
 // Create the session.
-sess := fornitego.Create("USERNAME", "PASSWORD", "LAUNCHER-TOKEN", "GAME-TOKEN")
+sess := fortnitego.Create("USERNAME", "PASSWORD", "LAUNCHER-TOKEN", "GAME-TOKEN")
 
-// Retrieve player info and stats by Username and Platform.
-player, err := s.QueryPlayer("PlayerName", "", fornitego.PC) // (PC/Xbox/PS4)
+// Retrieve player info and stats by Username.
+player, err := s.QueryPlayer("PlayerName", "")
 if err != nil {
 	fmt.Println(err)
 }
 
-// Retrieve player info and stats by Account ID and Platform.
-player, err := s.QueryPlayer("", "AccountID", fornitego.PC) // (PC/Xbox/PS4)
+// Retrieve player info and stats by Account ID.
+player, err := s.QueryPlayer("", "AccountID")
 if err != nil {
 	fmt.Println(err)
 }
@@ -41,48 +55,130 @@ If the player exists, a result may look like the example below. (Represented in 
 {
   "AccountInfo": {
     "AccountID": "6cd40c1722f2497fa1d2145b26da88e3",
-    "Username": "WalterJr2",
-    "Platform": "pc"
   },
   "Stats": {
     "Solo": {
-      "Wins": 23,
-      "Top10": 86,
-      "Top25": 154,
-      "KillDeathRatio": "3.13",
-      "WinPercentage": "6.74",
-      "Matches": 341,
-      "Kills": 995,
-      "MinutesPlayed": 2174,
-      "KillsPerMatch": "2.92",
-      "KillsPerMinute": "0.46",
-      "Score": 56247
+			"Touch": {
+	      "Wins": 23,
+	      "Top10": 86,
+	      "Top25": 154,
+	      "KillDeathRatio": "3.13",
+	      "WinPercentage": "6.74",
+	      "Matches": 341,
+	      "Kills": 995,
+	      "MinutesPlayed": 2174,
+	      "KillsPerMatch": "2.92",
+	      "KillsPerMinute": "0.46",
+	      "Score": 56247
+			},
+			"Gamepad": {
+	      "Wins": 23,
+	      "Top10": 86,
+	      "Top25": 154,
+	      "KillDeathRatio": "3.13",
+	      "WinPercentage": "6.74",
+	      "Matches": 341,
+	      "Kills": 995,
+	      "MinutesPlayed": 2174,
+	      "KillsPerMatch": "2.92",
+	      "KillsPerMinute": "0.46",
+	      "Score": 56247
+			},
+			"KeyboardMouse": {
+	      "Wins": 23,
+	      "Top10": 86,
+	      "Top25": 154,
+	      "KillDeathRatio": "3.13",
+	      "WinPercentage": "6.74",
+	      "Matches": 341,
+	      "Kills": 995,
+	      "MinutesPlayed": 2174,
+	      "KillsPerMatch": "2.92",
+	      "KillsPerMinute": "0.46",
+	      "Score": 56247
+			},
     },
     "Duo": {
-      "Wins": 45,
-      "Top5": 89,
-      "Top12": 149,
-      "KillDeathRatio": "3.27",
-      "WinPercentage": "11.03",
-      "Matches": 408,
-      "Kills": 1186,
-      "MinutesPlayed": 1465,
-      "KillsPerMatch": "2.91",
-      "KillsPerMinute": "0.81",
-      "Score": 91499
+			"Touch": {
+	      "Wins": 45,
+	      "Top5": 89,
+	      "Top12": 149,
+	      "KillDeathRatio": "3.27",
+	      "WinPercentage": "11.03",
+	      "Matches": 408,
+	      "Kills": 1186,
+	      "MinutesPlayed": 1465,
+	      "KillsPerMatch": "2.91",
+	      "KillsPerMinute": "0.81",
+	      "Score": 91499
+			},
+			"Gamepad": {
+	      "Wins": 45,
+	      "Top5": 89,
+	      "Top12": 149,
+	      "KillDeathRatio": "3.27",
+	      "WinPercentage": "11.03",
+	      "Matches": 408,
+	      "Kills": 1186,
+	      "MinutesPlayed": 1465,
+	      "KillsPerMatch": "2.91",
+	      "KillsPerMinute": "0.81",
+	      "Score": 91499
+			},
+			"KeyboardMouse": {
+	      "Wins": 45,
+	      "Top5": 89,
+	      "Top12": 149,
+	      "KillDeathRatio": "3.27",
+	      "WinPercentage": "11.03",
+	      "Matches": 408,
+	      "Kills": 1186,
+	      "MinutesPlayed": 1465,
+	      "KillsPerMatch": "2.91",
+	      "KillsPerMinute": "0.81",
+	      "Score": 91499
+			},
     },
     "Squad": {
-      "Wins": 116,
-      "Top3": 190,
-      "Top6": 305,
-      "KillDeathRatio": "3.60",
-      "WinPercentage": "14.23",
-      "Matches": 815,
-      "Kills": 2516,
-      "MinutesPlayed": 3143,
-      "KillsPerMatch": "3.09",
-      "KillsPerMinute": "0.80",
-      "Score": 253462
+			"Touch": {
+	      "Wins": 116,
+	      "Top3": 190,
+	      "Top6": 305,
+	      "KillDeathRatio": "3.60",
+	      "WinPercentage": "14.23",
+	      "Matches": 815,
+	      "Kills": 2516,
+	      "MinutesPlayed": 3143,
+	      "KillsPerMatch": "3.09",
+	      "KillsPerMinute": "0.80",
+	      "Score": 253462
+			},
+			"Gamepad": {
+	      "Wins": 116,
+	      "Top3": 190,
+	      "Top6": 305,
+	      "KillDeathRatio": "3.60",
+	      "WinPercentage": "14.23",
+	      "Matches": 815,
+	      "Kills": 2516,
+	      "MinutesPlayed": 3143,
+	      "KillsPerMatch": "3.09",
+	      "KillsPerMinute": "0.80",
+	      "Score": 253462
+			},
+			"KeyboardMouse": {
+	      "Wins": 116,
+	      "Top3": 190,
+	      "Top6": 305,
+	      "KillDeathRatio": "3.60",
+	      "WinPercentage": "14.23",
+	      "Matches": 815,
+	      "Kills": 2516,
+	      "MinutesPlayed": 3143,
+	      "KillsPerMatch": "3.09",
+	      "KillsPerMinute": "0.80",
+	      "Score": 253462
+			},
     }
   }
 }
@@ -91,7 +187,7 @@ If the player exists, a result may look like the example below. (Represented in 
 ### Leaderboard
 To retrieve the top 50 global wins leaderboard:
 ```go
-lb, err := sess.GetWinsLeaderboard(fornitego.PC, fornitego.Squad) // (Solo, Duo, Squad)
+lb, err := sess.GetWinsLeaderboard(fortnitego.PC, fortnitego.Squad) // (Solo, Duo, Squad)
 if err != nil {
 	fmt.Println(err)
 }
